@@ -13,6 +13,7 @@ import Mathlib.GroupTheory.Subsemigroup.Operations
 
 #check Quot
 section Coerciones
+
 variable {α : Type u} {a b c d : α}
 def injective (f : X → Y) : Prop :=
 ∀ ⦃x₁ x₂⦄, f x₁ = f x₂ → x₁ = x₂
@@ -21,9 +22,9 @@ def surjective (f : X → Y) : Prop :=
 ∀ y, ∃ x, f x = y
 
 def bijective (f : X → Y) := injective f ∧ surjective f
-def curry {α β γ : Type} (f : α × β → γ) : α → β → γ := λ x y => f (x, y)
+def curry {α β γ : Type u} (f : α × β → γ) : α → β → γ := λ x y => f (x, y)
 
-def uncurry {α β γ : Type} (f : α → β → γ) : α × β → γ := fun (x, y) => f x y
+def uncurry {α β γ : Type u} (f : α → β → γ) : α × β → γ := fun (x, y) => f x y
 
 
 def range (f : α → β) : Set β :=
@@ -199,6 +200,7 @@ lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : 
 
 end RightNormalBand
 end RightNormalBand
+
 section NormalPosets
 instance SegmentoInicial {α : Type u} [PartialOrder α] {a : α} : PartialOrder (Set.Iic a) where
   le_antisymm := by
@@ -209,7 +211,7 @@ def InitialSegment {α : Type u} [PartialOrder α] (a : α) : Set α := {b | b �
 
 
 def IsNormal {α : Type u} (_ : PartialOrder α) : Prop := --Existe una RNB \alpha tal que P es isomorfo al poset asociado a α
-∃ (α': Type),∃(_ : RightNormalBand α'), ∃(_:OrderIso α α'), True
+∃ (α': Type u),∃(_ : RightNormalBand α'), ∃(_:OrderIso α α'), True
 
 theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {f : α →o β} {b : α}: Ordrange (OrdHomRestrict f (Set.Iic  b)) ⊆ Set.Iic (f b) := by
     intro x xir
@@ -243,7 +245,7 @@ section Subestructuras
 
 def Closed [RightNormalBand α] (p : Set α) : Prop := ∀ x y : α, x ∈ p → y ∈ p → x * y ∈ p
 
-variable {α : Type u } [RightNormalBand α]
+variable {α : Type u} [RightNormalBand α]
 
 def ProdRestrict {s : Set α} {h : Closed s} : s → s → s :=
 fun x y =>
@@ -288,25 +290,32 @@ theorem RestricNorm {s : Set α} {h : Closed s} : ∀ x y z: s, ProdRestrict (s:
 
 
 
-instance SubStruc {s : Set α} {h : Closed s}: Mul ↑s where
-  mul := ProdRestrict (s := s) (h :=h)
-
 @[default_instance]
 instance SubBanda {s : Set α} {h : Closed s}: RightNormalBand s where
-  mul := ProdRestrict (s := s) (h :=h)
+  mul := ProdRestrict (s := s) (h := h)
   mul_assoc := RestricAsoc
   mul_norm :=  RestricNorm
   mul_idem := RestricIdem
 
+#check SubBanda
 
 def HomRestrict'' [RightNormalBand β] (f : MulHom α β) (s : Set α) : s → β :=  asSubtype (res f.toFun s)
 
-def HomRestrict' [RightNormalBand β] (f : MulHom α β) (s : Set α) {h : Closed s} : MulHom s β where
+def HomRestrict' [RightNormalBand β] (f : MulHom α β) (s : Set α) {h : Closed s} {SubBanda : Mul s}  : MulHom s  β where
+  toFun := HomRestrict'' f s
+  map_mul' :=  by
+    intro x y
+    calc
+      HomRestrict'' f s (x * y) = res f.toFun s (x * y) := by
+        apply Eq.refl
+      _ = f (x * y) := by apply Eq.refl
+      _ = (f x) * (f y) := by apply f.map_mul'
+      _ =  (res f.toFun s x) * (res f.toFun s y) := by apply Eq.refl
+      _ = HomRestrict'' f s x * HomRestrict'' f s y := by apply Eq.refl
 
 
 
 end Subestructuras
-
 
 section Productos
 instance BandProduct [RightNormalBand α] [RightNormalBand β] : RightNormalBand (α × β) where
@@ -371,7 +380,9 @@ section Homomorfismos
         --_ = f (b' * a') * f c' := by rw[map_mul]
         --_ = (f b' * f a') * f c' := by rw[map_mul]
         --_ = b * a * c:= by simp_all[ha', hb', hc']
-def BandHomisOrdHom {α β :Type u} [RightNormalBand α][RightNormalBand β] (f : MulHom α β) : α →o β where
+
+
+def BandHomtoOrdHom {α β :Type u} [RightNormalBand α][RightNormalBand β] (f : MulHom α β) : α →o β where
   toFun := f.toFun
   monotone' := by
     intro x y xley
@@ -386,7 +397,7 @@ def BandHomisOrdHom {α β :Type u} [RightNormalBand α][RightNormalBand β] (f 
 
 
 
-theorem BandIsoisOrdIso {α β : Type u} [RightNormalBand α][RightNormalBand β] {f : MulHom α β} {h : bijective f.toFun}: IsIso (BandHomisOrdHom f) := by
+theorem BandIsoisOrdIso {α β : Type u} [RightNormalBand α][RightNormalBand β] {f : MulHom α β} {h : bijective f.toFun}: IsIso (BandHomtoOrdHom f) := by
   constructor
   apply h
   intro x y fxy
@@ -398,7 +409,7 @@ theorem BandIsoisOrdIso {α β : Type u} [RightNormalBand α][RightNormalBand β
     apply h.left
     rw[g]
   apply g''
-
+end Homomorfismos
 section Congruencias
 
 class Congruence (α : Type u) [RightNormalBand α] where
@@ -424,20 +435,27 @@ theorem QuotForm {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ x 
   have h' : Quot.mk h.r a = Quot.mk h.r a := by apply Eq.refl
   apply Exists.intro a h'
 
+
+
 def ProjCann' {α : Type u} [RightNormalBand α] {h : Congruence α} : α → Quot h.r := fun a => Quot.mk h.r a
+
+
 
 theorem ProjCongr'' {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ x y z : α,  h.r y z → Quot.mk h.r (x * y) = Quot.mk h.r (x * z) := by
 intro x y z yrz
-apply ProjCongr'''
-apply h.refl
-apply yrz
+have h' : h.r (x * y) (x *z) := by
+  apply h.cong
+  apply h.refl
+  apply yrz
+exact Quot.sound h'
 
 theorem ProjCongr' {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ y z x : α,  h.r y z → Quot.mk h.r (y * x) = Quot.mk h.r (z * x) := by
-intro x y z yrz
-apply ProjCongr'''
-apply yrz
-apply h.refl
-
+intro y z x yrz
+have h' : h.r (y * x) (z *x) := by
+  apply h.cong
+  apply yrz
+  apply h.refl
+exact Quot.sound h'
 def QuotProd  {α : Type u} [RightNormalBand α] {h : Congruence α} : Quot h.r → Quot h.r →  Quot h.r :=
   Quot.lift₂ (β := α) (γ := Quot h.r) (r := h.r) (s := h.r) (f := fun x y => Quot.mk h.r (x * y)) (hr := ProjCongr'') (hs := ProjCongr' (α := α))
 
@@ -492,11 +510,13 @@ theorem QuotProdNorm {α : Type u} [RightNormalBand α] {h : Congruence α} : �
       simp_all[ha,hb,hc]
       apply Eq.refl
 
-instance QuotBand {α : Type u} [RightNormalBand α] {h : Congruence α} : RightNormalBand (Quot h.r) where
+ instance QuotBand {α : Type u} [RightNormalBand α] {h : Congruence α} : RightNormalBand (Quot h.r) where
   mul := QuotProd
   mul_assoc := QuotProdAssoc
   mul_idem := QuotProdIdem
   mul_norm := QuotProdNorm
+
+
 
 def ProjCann {α : Type u} [RightNormalBand α] {h : Congruence α} : MulHom α (Quot h.r) where
   toFun := ProjCann'
@@ -631,22 +651,29 @@ theorem QuotInf [RightNormalBand α] : ∀ a b c : Quot Project, QuotBand.leq a 
         rw[h'.left]
         rw[h'.right]
   apply h''
+
 instance QuotSemilattice [RightNormalBand α] : SemilatticeInf (Quot Project (α:= α)) where
-inf := QuotProd
-le := QuotBand.leq
-le_refl := QuotBand.refl_le
-le_trans := QuotBand.trans_le
-le_antisymm := QuotBand.antisymm_le
-inf_le_left := QuotInfLeft
-inf_le_right := QuotBand.por_is_leq
-le_inf := QuotInf
+  inf := QuotProd
+  le := QuotBand.leq
+  le_refl := QuotBand.refl_le
+  le_trans := QuotBand.trans_le
+  le_antisymm := QuotBand.antisymm_le
+  inf_le_left := QuotInfLeft
+  inf_le_right := QuotBand.por_is_leq
+  le_inf := QuotInf
 
-
+--def OrderProjection [RightNormalBand α] : α →o Quot Project (α:= α) where
+ -- toFun := ProjCann'
+  --monotone' := by
+   -- intro x y xley
+    --have h' : ProjCann'
 
 end Congruencias
+
 section Semilattices
+
 variable {α : Type u} [SemilatticeInf α]
- #check SemilatticeInf
+
 
 theorem SLNorm : ∀ a b c : α, a ⊓ b ⊓ c = b ⊓ a ⊓ c := by
   intro a b c
@@ -659,29 +686,39 @@ instance SemilatticeNormal : RightNormalBand α where
   mul_idem := by apply inf_idem
 
 theorem SemilatticeRespect [SemilatticeInf α] {x y : α} : SemilatticeNormal.leq x y ↔ x ≤ y := by
-apply inf_eq_left
+constructor
+intro xley
+have h' : x ⊓ y = x := by apply xley
+simp_all[h', inf_le_right]
+apply xley
+intro xy
+have h' : x ⊓ y = x := by
+  apply le_antisymm
+  exact Eq.le xy
+  exact Eq.ge xy
+apply h'
 
 end Semilattices
 section Antichains
 variable {α : Type u}
-
+namespace Anticadenas
 class Antichain (α : Type u) extends PartialOrder α where
   incomp : ∀ (x y : α), x ≤ y → x = y
 
-instance Anticadena : Antichain α where
-  le := Eq
-  le_refl := Eq.refl
-  le_trans := by
-    intro a b c ab bc
-    calc
-      a = b := by apply ab
-      _ = c := by apply bc
-  le_antisymm := by
-    intro a b ab _
-    apply ab
-  incomp := by
-    intro x y xley
-    simp_all
+--instance Anticadena : Antichain α where
+ -- le := Eq
+  --le_refl := Eq.refl
+  --le_trans := by
+   -- intro a b c ab bc
+    --calc
+     -- a = b := by apply ab
+      --_ = c := by apply bc
+  --le_antisymm := by
+   -- intro a b ab _
+    --apply ab
+  --incomp := by
+   -- intro x y xley
+    --simp_all
 
 def AntichainProd [Antichain α] : Mul α  where
   mul := fun _ y => y
@@ -725,15 +762,28 @@ theorem AntichainRespect [h : Antichain α] {x y : α} : AntichainNormal.leq x y
     apply RightNormalBand.mul_idem
   apply h'''
 
- end Antichains
+end Anticadenas
+end Antichains
 
 
 section Principal
-variable {α β : Type} [RightNormalBand α]
+variable {α β : Type u} [RightNormalBand α]
 #check SemilatticeInf
-def SubProductoNormal {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) (h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := β) f a)) : Type (β × α) :=
-{(x,p) // le (f p) x}
 
+def SubProducto {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β }  : Set (β × α) :=
+{x | x.1 ≤ f x.2}
+
+lemma IsInSubProducto [PartialOrder α] [SemilatticeInf β] {f : α →o β }  : ∀ x y : (β × α) , y.1 ≤ f y.2 → x.1 ⊓ y.1 ≤  f y.2 := by
+  intro x y yins
+  calc
+    x.1 ⊓ y.1 ≤ y.1 := by sorry
+    _ ≤ f y.2 := by apply yins
+
+def SubBand {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) (h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := β) f a)) : SubProducto → SubProducto  → SubProducto  := fun x y =>
+(x.1 ⊓ y.1, y.2)
+
+instance {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) (h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := β) f a)) : RightNormalBand (SubProducto P S f) where
+mul := fun x y => ⟨(x.1 ⊓ y.1, y.2), ⟩
 
 theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNormal P ↔ IsNormal' P := by
   constructor
