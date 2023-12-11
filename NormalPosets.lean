@@ -15,20 +15,16 @@ import Mathlib.GroupTheory.Subsemigroup.Operations
 section Coerciones
 variable {α : Type u} {a b c d : α}
 def injective (f : X → Y) : Prop :=
-∀ ⦃x₁ x₂⦄, f x₁ = f x₂ → x₁ = x₂
+∀ x₁ x₂, f x₁ = f x₂ → x₁ = x₂
 
 def surjective (f : X → Y) : Prop :=
 ∀ y, ∃ x, f x = y
 
 def bijective (f : X → Y) := injective f ∧ surjective f
-def curry {α β γ : Type u} (f : α × β → γ) : α → β → γ := λ x y => f (x, y)
 
-def uncurry {α β γ : Type u} (f : α → β → γ) : α × β → γ := fun (x, y) => f x y
-
-
-def range (f : α → β) : Set β :=
+def range (f : α → β) : Set β := --rango de una función
   { b | ∃ a, b = f a }
-def Ordrange {α : Type u} {β : Type u} [Preorder α][Preorder β] (f : OrderHom α β) : Set β :=
+def Ordrange {α : Type u} {β : Type u} [Preorder α][Preorder β] (f : OrderHom α β) : Set β := --rango de un homomorfismo de orden
    { b | ∃ a : α, b = f a }
 
 def cod_res (f : α → β) (s : Set β) (h: range f ⊆ s): α → s := fun x => --Achica el codominio de una función
@@ -47,11 +43,6 @@ def res (f : α → β) (s : Set α) : α →. β := --de PFun
 def asSubtype (f : α →. β) (s : f.Dom) : β := --de PFun
   f.fn s s.2
 
-instance SubPoset {α : Type u} [PartialOrder α] {p : Set α} : PartialOrder p where
-  le_antisymm := by
-    intro x y xley ylex
-    apply le_antisymm xley ylex
-
 def OrdHomRestrict' [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) : p → β := fun x =>
   asSubtype (res f.toFun p) x --Toma un homomorfismo f de α en β y un subconjunto p de α y devuelve f restringido a p (como función)
 
@@ -65,7 +56,7 @@ theorem RestIsMon  [PartialOrder α] [PartialOrder β] {f : OrderHom α β} {p :
  {toFun := OrdHomRestrict' f p
   monotone' := by apply RestIsMon}
 
-  def OrdHomRange' [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) (q : Set β) (c : Ordrange (OrdHomRestrict f p) ⊆ q): p → q :=
+  def OrdHomRange' [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) (q : Set β) (c : Ordrange (OrdHomRestrict f p) ⊆ q): p → q := --Restringe el dominio y el codominio de un homomorfismo de orden
     have h' : range (OrdHomRestrict' f p) ⊆ q := by
       intro x xir
       rcases xir with ⟨a, ha⟩
@@ -200,18 +191,14 @@ lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : 
 end RightNormalBand
 end RightNormalBand
 section NormalPosets
-instance SegmentoInicial {α : Type u} [PartialOrder α] {a : α} : PartialOrder (Set.Iic a) where
-  le_antisymm := by
-    intro x y
-    apply le_antisymm
+
 
 def InitialSegment {α : Type u} [PartialOrder α] (a : α) : Set α := {b | b ≤ a}
-
 
 def IsNormal {α : Type u} (_ : PartialOrder α) : Prop := --Existe una RNB \alpha tal que P es isomorfo al poset asociado a α
 ∃ (α': Type u),∃(_ : RightNormalBand α'), ∃(_:OrderIso α α'), True
 
-theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {f : α →o β} {b : α}: Ordrange (OrdHomRestrict f (Set.Iic  b)) ⊆ Set.Iic (f b) := by
+theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {f : α →o β} {b : α}: Ordrange (OrdHomRestrict f (Set.Iic  b)) ⊆ Set.Iic (f b) := by --Prueba de que la imagen de restricción de un homomorfismo al segmento inicial de b esta contenida en el segmento inicial de fb
     intro x xir
     rcases xir with ⟨w, hw⟩
     have
@@ -229,10 +216,10 @@ theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {
     apply h''
     apply this
 
-def InitialRestriction {α β: Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(a : α)  : Set.Iic a →o Set.Iic (f a) :=
+def InitialRestriction {α β: Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(a : α)  : Set.Iic a →o Set.Iic (f a) := --Toma una f y un a y devuelve f restringida al segmento inicial de a con codominio segmento inicial de (f a)
     OrdHomRange f (Set.Iic a) (Set.Iic (f a)) (RestrictionInitial)
 
-def IsNormal' {α : Type u} (_ : PartialOrder α) : Prop :=
+def IsNormal' {α : Type u} (_ : PartialOrder α) : Prop := --Caracterización orden teorética de los posets normales
 ∃ (α' : Type u), ∃(_ : SemilatticeInf α'), ∃(f : OrderHom α α'), ∀(a : α), IsIso (InitialRestriction f a)
 
 end NormalPosets
@@ -245,7 +232,7 @@ def Closed [RightNormalBand α] (p : Set α) : Prop := ∀ x y : α, x ∈ p →
 
 variable {α : Type u} [RightNormalBand α]
 
-def ProdRestrict {s : Set α} {h : Closed s} : s → s → s :=
+def ProdRestrict {s : Set α} {h : Closed s} : s → s → s := --Restricción de un producto a un cerrado
 fun x y =>
   ⟨x * y, by apply h
              · apply x.2
@@ -288,11 +275,8 @@ theorem RestricNorm {s : Set α} {h : Closed s} : ∀ x y z: s, ProdRestrict (s:
 
 
 
-instance SubStruc {s : Set α} {h : Closed s}: Mul ↑s where
-  mul := ProdRestrict (s := s) (h :=h)
 
-@[default_instance]
-instance SubBanda {s : Set α} {h : Closed s}: RightNormalBand s where
+def SubBanda {s : Set α} {h : Closed s}: RightNormalBand s where --Subestructura de una banda es una banda
   mul := ProdRestrict (s := s) (h :=h)
   mul_assoc := RestricAsoc
   mul_norm :=  RestricNorm
@@ -328,49 +312,7 @@ instance BandProduct [RightNormalBand α] [RightNormalBand β] : RightNormalBand
 
 end Productos
 section Homomorfismos
- --instance HomImage' [RightNormalBand α] [Mul β] {f : MulHom α β} {h : surjective f.toFun} : RightNormalBand β where
-    --mul_assoc := by
-      --intro a b c
-      --have ha : ∃ a' : α, f a' = a := by apply h
-      --have hb : ∃ a' : α, f a' = b := by apply h
-      --have hc : ∃ a' : α, f a' = c := by apply h
-      --rcases ha with ⟨a', ha'⟩
-      --rcases hb with ⟨b', hb'⟩
-      --rcases hc with ⟨c', hc'⟩
-      --calc
-       -- a * b * c = (f a') * (f b') * (f c') := by simp_all[ha', hb', hc']
-       -- _ = f (a' * b') * f c' := by rw[map_mul]
-        --_ = f (a' * b' * c') := by rw[←map_mul]
-        --_-- = f (a' * (b' * c')) := by
-        --  rw[mul_assoc]
-        --_ = f a' * f (b' * c') := by rw[map_mul]
-        --_ = f a' * (f b' * f c') := by rw[map_mul]
-        --_ = a * (b * c) := by simp_all[ha', hb', hc']
-    --mul_idem := by
-      --  intro a
-       -- have ha : ∃ a' : α, f a' = a := by apply h
-        --rcases ha with ⟨a', ha'⟩
-        --calc
-        --  a * a = f a' * f a' := by simp_all[ha']
-       --   _ = f (a' * a') := by rw[←map_mul]
-        --  _ = f (a') := by rw[RightNormalBand.mul_idem]
-         -- _ = a := by rw[ha']
-    --mul_norm := by
-     -- intro a b c
-      --have ha : ∃ a' : α, f a' = a := by apply h
-      --have hb : ∃ a' : α, f a' = b := by apply h
-      --have hc : ∃ a' : α, f a' = c := by apply h
-      --rcases ha with ⟨a', ha'⟩
-      --rcases hb with ⟨b', hb'⟩
-      --rcases hc with ⟨c', hc'⟩
-      --calc
-       -- a * b * c = (f a') * (f b') * (f c') := by simp_all[ha', hb', hc']
-       -- _ = f (a' * b') * f c' := by rw[map_mul]
-        --_ = f (a' * b' * c') := by rw[←map_mul]
-        --_ = f (b' * a' * c') := by rw[RightNormalBand.mul_norm]
-        --_ = f (b' * a') * f c' := by rw[map_mul]
-        --_ = (f b' * f a') * f c' := by rw[map_mul]
-        --_ = b * a * c:= by simp_all[ha', hb', hc']
+
 def BandHomtoOrdHom {α β :Type u} [RightNormalBand α][RightNormalBand β] (f : MulHom α β) : α →o β where
   toFun := f.toFun
   monotone' := by
@@ -414,7 +356,7 @@ class Congruence (α : Type u) [RightNormalBand α] where
   cong : ∀ {x y z w}, r x y → r z w → r (x * z) (y * w)
 
 
-#check Quot.ind
+#check Quotient
 
 def Cociente {α : Type u} [RightNormalBand α] (h : Congruence α) : Type u :=
   Quot h.r
@@ -424,7 +366,9 @@ theorem QuotForm {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ x 
   have h' : Quot.mk h.r a = Quot.mk h.r a := by apply Eq.refl
   apply Exists.intro a h'
 
-
+lemma CongSound{α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ x y : α, Quot.mk h.r x = Quot.mk h.r y → h.r x y := by
+  intro x y xry
+  sorry
 
 def ProjCann' {α : Type u} [RightNormalBand α] {h : Congruence α} : α → Quot h.r := fun a => Quot.mk h.r a
 
@@ -507,13 +451,17 @@ instance QuotBand {α : Type u} [RightNormalBand α] {h : Congruence α} : Right
 
 
 
-def ProjCann {α : Type u} [RightNormalBand α] {h : Congruence α} : MulHom α (Quot h.r) where
+def ProjCann {α : Type u} [RightNormalBand α] {h : Congruence α} : MulHom α (Quot h.r) where --La proyección canónica como homomorfismo de álgebra
   toFun := ProjCann'
   map_mul' := by
     intro x y
     calc
       ProjCann' (x * y) = Quot.mk h.r (x * y) := by apply Eq.refl
       _ = (Quot.mk h.r x) * (Quot.mk h.r y) := by apply Eq.refl
+
+def OrderProj {α : Type u} [RightNormalBand α] {h : Congruence α} : α →o (Quot h.r) := --La proyección canónica como homomorfismo de orden
+  BandHomtoOrdHom ProjCann
+
 def Project  [RightNormalBand α] (a b : α) := a * b = b ∧ b * a = a
 
 theorem ProjectRefl [RightNormalBand α]  {a : α} : Project a a := by
@@ -565,7 +513,7 @@ theorem ProjectCongr [RightNormalBand α]  {a b c d : α} :  Project a b → Pro
      _ = a * c := by rw[x.right]
 
 
-instance ProjectCong [RightNormalBand α]  : Congruence α where
+instance ProjectCong (A : RightNormalBand α) : Congruence α where
   r := Project
   refl := by
     intro x
@@ -579,6 +527,7 @@ instance ProjectCong [RightNormalBand α]  : Congruence α where
   cong := by
     intro x y z w
     apply ProjectCongr
+
 
 theorem ProductProject [RightNormalBand α] : ∀ a b :α, Project (a * b) (b * a) := by
   intro a b
@@ -599,6 +548,82 @@ theorem ProductProject [RightNormalBand α] : ∀ a b :α, Project (a * b) (b * 
       _ = b * a * b := by rw[mul_assoc]
       _ = a * b := by apply NormIsReg
   apply h'
+
+theorem RestrictProjectIsIso {A : RightNormalBand α} (a : α) : IsIso (InitialRestriction (OrderProj (h := ProjectCong A)) a)  := by
+  constructor
+  constructor
+  intro x y fxy
+  have g : Quot.mk Project x.1 = Quot.mk Project y.1 := by
+    calc
+      Quot.mk Project x.1 = OrderProj x.1 := by apply Eq.refl
+      _ = (InitialRestriction (OrderProj (h := ProjectCong A)) a) x := by apply Eq.refl
+      _ = (InitialRestriction (OrderProj (h := ProjectCong A)) a) y := by simp_all[fxy]
+      _ = OrderProj y.1 := by apply Eq.refl
+      _ = Quot.mk Project y.1 := by apply Eq.refl
+  have g' : Project x.1 y.1 := by
+    apply CongSound
+    apply g
+  have g'' : x.1 ≤ a := by apply x.2
+  have j : x.1 * a = x.1 := by
+    apply g''
+
+  have g''' : y.1 ≤ a := by apply y.2
+  have h' : x.1 = y.1 := by
+    calc
+      x.1 = x.1 * a := by simp_all[g'']
+      _ = y.1 * x.1 * a := by rw[g'.right]
+      _ = x.1 * y.1 * a := by apply RightNormalBand.mul_norm
+      _ = y.1 * a := by rw[g'.left]
+      _ = y.1 := by apply g'''
+  simp_all[h']
+  exact SetCoe.ext h'
+  intro x
+  have w : ∃ x' : α, x = Quot.mk Project x' := by apply QuotForm
+  rcases w with ⟨x', hx⟩
+  have w' : x' * a ∈ Set.Iic a := by simp
+  have l : x.1 * Quot.mk Project a = x.1 := by
+    apply x.2
+  have r : QuotBand.mul (Quot.mk Project x') (Quot.mk Project a) = Quot.mk Project x' := by
+      calc
+        QuotBand.mul (Quot.mk Project x') (Quot.mk Project a) = QuotBand.mul x (Quot.mk Project a) := by rw[hx]
+        _ = x := by apply l
+        _ = Quot.mk Project x' := by rw[←hx]
+  have w'' : InitialRestriction (OrderProj (h := ProjectCong A)) a ⟨x' * a, w'⟩ = x.1 := by
+    calc
+      InitialRestriction (OrderProj (h := ProjectCong A)) a ⟨x' * a, w'⟩ = OrderProj (x'* a) := by apply Eq.refl
+      _ = Quot.mk Project (x'* a) := by apply Eq.refl
+      _ = QuotBand.mul (Quot.mk Project x') (Quot.mk Project a) := by apply Eq.refl
+      _ = Quot.mk Project x' := by apply r
+      _ = x := by simp_all[hx]
+  have w''' : InitialRestriction (OrderProj (h := ProjectCong A)) a ⟨x' * a, w'⟩ = x := by
+    exact SetCoe.ext w''
+
+  simp_all[w''']
+  exact BEx.intro (x' * a) w' w'''
+  intro x y xley
+  have r' : Project (y.1 * x.1) x.1 := by
+    apply CongSound
+    calc
+      Quot.mk Project (y.1 * x.1) = Quot.mk Project (x.1* y.1) := by
+        apply Quot.sound
+        apply ProductProject
+      Quot.mk Project (x.1* y.1) = QuotBand.mul (Quot.mk Project x.1) (Quot.mk Project y.1) := by apply Eq.refl
+      _ = Quot.mk Project x.1 := by apply xley
+  have r'' : y.1 * x.1 = x.1 := by
+    calc
+      y.1 * x.1 = y.1 * (x.1 * x.1) := by rw[RightNormalBand.mul_idem]
+      _ = y.1 * x.1 * x.1 := by rw[←mul_assoc]
+      _ = x.1 := by apply r'.left
+
+  have q : y.1 * a  = y.1 := by apply y.2
+  have q' : x.1 * a  = x.1 := by apply x.2
+
+  calc
+    x.1 * y.1 = x.1 * (y.1 * a) := by rw[q]
+    _ = x.1 * y.1 * a := by rw[mul_assoc]
+    _ = y.1 * x.1 * a := by rw[RightNormalBand.mul_norm]
+    _ = x.1 * a := by rw[r'']
+    _ = x.1 := by rw[q']
 
 theorem ProjectQuotComm [RightNormalBand α] : ∀ a b :Quot Project, QuotProd (α := α) a b = QuotProd (α := α) b a := by
   intro a b
@@ -626,6 +651,8 @@ theorem QuotInfLeft [RightNormalBand α] : ∀ a b: Quot Project, QuotProd (α :
   rw[ProjectQuotComm]
   apply QuotInfRight
 
+
+
 theorem QuotInf [RightNormalBand α] : ∀ a b c : Quot Project, QuotBand.leq a b → QuotBand.leq a c → QuotBand.leq a (QuotProd (α := α) b c) := by
   intro a b c aleb alec
   have h' : QuotProd a b = a ∧ QuotProd a c = a := by
@@ -640,6 +667,11 @@ theorem QuotInf [RightNormalBand α] : ∀ a b c : Quot Project, QuotBand.leq a 
         rw[h'.left]
         rw[h'.right]
   apply h''
+
+
+
+
+
 instance QuotSemilattice [RightNormalBand α] : SemilatticeInf (Quot Project (α:= α)) where
 inf := QuotProd
 le := QuotBand.leq
@@ -681,80 +713,220 @@ have h' : x ⊓ y = x := by
 apply h'
 
 end Semilattices
-section Antichains
-variable {α : Type u}
+-- section Antichains
+-- variable {α : Type u}
 
-class Antichain (α : Type u) extends PartialOrder α where
-  incomp : ∀ (x y : α), x ≤ y → x = y
+-- class Antichain (α : Type u) extends PartialOrder α where
+--   incomp : ∀ (x y : α), x ≤ y → x = y
 
-instance Anticadena : Antichain α where
-  le := Eq
-  le_refl := Eq.refl
-  le_trans := by
-    intro a b c ab bc
-    calc
-      a = b := by apply ab
-      _ = c := by apply bc
-  le_antisymm := by
-    intro a b ab _
-    apply ab
-  incomp := by
-    intro x y xley
-    simp_all
+-- instance Anticadena : Antichain α where
+--   le := Eq
+--   le_refl := Eq.refl
+--   le_trans := by
+--     intro a b c ab bc
+--     calc
+--       a = b := by apply ab
+--       _ = c := by apply bc
+--   le_antisymm := by
+--     intro a b ab _
+--     apply ab
+--   incomp := by
+--     intro x y xley
+--     simp_all
 
-def AntichainProd [Antichain α] : Mul α  where
-  mul := fun _ y => y
+-- def AntichainProd [Antichain α] : Mul α  where
+--   mul := fun _ y => y
 
-theorem ACProdAssoc [Antichain α] :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
-  intro a b c
-  calc
-    AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
-      apply Eq.refl
-    _ = AntichainProd.mul a (AntichainProd.mul b c) := by
-      apply Eq.refl
+-- theorem ACProdAssoc [Antichain α] :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
+--   intro a b c
+--   calc
+--     AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
+--       apply Eq.refl
+--     _ = AntichainProd.mul a (AntichainProd.mul b c) := by
+--       apply Eq.refl
 
-theorem ACProdRefl [Antichain α] :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
+-- theorem ACProdRefl [Antichain α] :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
 
-theorem ACProdNorm [Antichain α]: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
-  intro a b c
-  calc
-    AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
-    _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
+-- theorem ACProdNorm [Antichain α]: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
+--   intro a b c
+--   calc
+--     AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
+--     _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
 
-instance AntichainNormal [Antichain α] : RightNormalBand α where
-  mul := AntichainProd.mul
-  mul_assoc := ACProdAssoc
-  mul_norm := ACProdNorm
-  mul_idem := ACProdRefl
+-- instance AntichainNormal [Antichain α] : RightNormalBand α where
+--   mul := AntichainProd.mul
+--   mul_assoc := ACProdAssoc
+--   mul_norm := ACProdNorm
+--   mul_idem := ACProdRefl
 
-theorem AntichainRespect [h : Antichain α] {x y : α} : AntichainNormal.leq x y ↔ x ≤ y := by
-  constructor
-  intro hx
-  calc
-    x = x * y := by rw[hx]
-    _ = y := by apply Eq.refl
-    _ ≤ y := by apply le_refl
-  intro lx
-  have g : x ≤ y → x = y := by apply h.incomp x y
-  have h'' : x = y := by
-    apply g
-    apply lx
-  have h''' : x * y = x := by
-    rw[←h'']
-    apply RightNormalBand.mul_idem
-  apply h'''
+-- theorem AntichainRespect [h : Antichain α] {x y : α} : AntichainNormal.leq x y ↔ x ≤ y := by
+--   constructor
+--   intro hx
+--   calc
+--     x = x * y := by rw[hx]
+--     _ = y := by apply Eq.refl
+--     _ ≤ y := by apply le_refl
+--   intro lx
+--   have g : x ≤ y → x = y := by apply h.incomp x y
+--   have h'' : x = y := by
+--     apply g
+--     apply lx
+--   have h''' : x * y = x := by
+--     rw[←h'']
+--     apply RightNormalBand.mul_idem
+--   apply h'''
 
- end Antichains
+--  end Antichains
 
 
 section Principal
 variable {α β : Type u} [RightNormalBand α]
 #check SemilatticeInf
+ def MapTo {α : Type u} [PartialOrder α] (b c: α) {h' : b ≤ c } : Set.Iic c := ⟨b, h'⟩
+
+theorem IsoComp' {α β γ: Type u} [PartialOrder α][PartialOrder β] [PartialOrder γ] {f : α →o γ} {g : β →o α} {h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := γ) f a)}{h' : IsIso g} : ∀(a : β), IsIso (InitialRestriction (α := β) (β := γ) (OrderHom.comp f g) a) := by
+  intro a
+  have j : IsIso (InitialRestriction f  (g a)) := by apply h
+  constructor
+  constructor
+  intro x y fxy
+  have k₁ : g x ≤ g a := by
+    apply g.monotone'
+    apply x.2
+  have k₂ : g y ≤ g a := by
+    apply g.monotone'
+    apply y.2
+
+  have k :  InitialRestriction f (g a) ⟨g x, k₁⟩ =InitialRestriction f (g a) ⟨g y, k₂⟩  := by
+    calc
+      InitialRestriction f (g a) ⟨g x, k₁⟩  = (InitialRestriction (OrderHom.comp f g) a) x := by apply Eq.refl
+      _ = (InitialRestriction (OrderHom.comp f g) a) y := by simp_all[fxy]
+      _ = InitialRestriction f (g a) ⟨g y, k₂⟩ := by apply Eq.refl
+  have k' : f (g x) = f (g y) := by
+    calc
+      f (g x) = InitialRestriction f (g a) ⟨g x, k₁⟩ := by apply Eq.refl
+      _ = InitialRestriction f (g a) ⟨g y, k₂⟩ := by simp_all[k]
+      _ = f (g y) := by apply Eq.refl
+
+  have th : ∀s t : α, s ≤ g a → t ≤ g a → f s = f t → s = t := by
+    intro s t gs gt st
+    have w : InitialRestriction f (g a) ⟨s,gs⟩ = InitialRestriction f (g a) ⟨t, gt⟩ := by
+     exact SetCoe.ext st
+
+    have w' : MapTo s (g a) = MapTo t (g a) := by
+      calc
+        MapTo s (g a) = ⟨s, gs⟩ := by apply Eq.refl
+        _ = ⟨t, gt⟩ := by
+          apply j.left.left
+          apply w
+        _ = MapTo t (g a) := by apply Eq.refl
+    calc
+      s = (MapTo s (g a)).1 := by
+        exact rfl
+      _ = (MapTo t (g a)).1 := by
+        exact congrArg Subtype.val w'
+      _ = t := by exact rfl
+  have t' : g x = g y := by
+    apply th
+    apply k₁
+    apply k₂
+    apply k'
+  exact SetCoe.ext (h'.left.left (↑x) (↑y) (t'))
+  --Surjectividad
+  intro x
+  have k : ∃ x', InitialRestriction f (g a) x' = x := by
+    apply j.left.right
+  rcases k with ⟨x', hx⟩
+  have k' : ∃b', g b' = x' := by apply h'.left.right
+  rcases k' with ⟨b, hb⟩
+  have blea : b≤a := by
+    apply h'.right
+    simp_all[hb]
+    apply x'.2
+
+  have w : ((InitialRestriction (OrderHom.comp f g) a) ⟨b, blea⟩).1 = x.1 := by
+    calc
+      ((InitialRestriction (OrderHom.comp f g) a) ⟨b, blea⟩).1 = f (g b) := by apply Eq.refl
+      _ = f x' := by simp_all[hb]
+      _ = InitialRestriction f (g a) x' := by apply Eq.refl
+      _ = x := by simp_all[hx]
+  have w' : (InitialRestriction (OrderHom.comp f g) a) ⟨b, blea⟩ = x := by
+    exact SetCoe.ext w
+  exact Exists.intro { val := b, property := blea } w'
+
+  --Inversa preserva orden
+  intro x y xley
+  have k₁ : g x ≤ g a := by
+    apply g.monotone'
+    apply x.2
+  have k₂ : g y ≤ g a := by
+    apply g.monotone'
+    apply y.2
+
+  have k  :(InitialRestriction (OrderHom.comp f g) a) y = InitialRestriction f (g a) ⟨g y, k₂⟩ := by
+    exact rfl
+  have k'  :(InitialRestriction (OrderHom.comp f g) a) x = InitialRestriction f (g a) ⟨g x, k₁⟩ := by
+    exact rfl
+
+  have r : MapTo (g x) (g a) ≤ MapTo (g y) (g a) := by
+    apply j.right
+    calc
+      InitialRestriction f (g a) (MapTo (g x) (g a)) = InitialRestriction f (g a) ⟨g x, k₁⟩ := by apply Eq.refl
+      _ = (InitialRestriction (OrderHom.comp f g) a) x  := by apply k'
+      _ ≤  (InitialRestriction (OrderHom.comp f g) a) y := by apply xley
+      _ = InitialRestriction f (g a) ⟨g y, k₂⟩ := by apply k
+
+  have r' : g x ≤ g y := by exact r
+  apply h'.right
+  apply r'
+
+
+def IsotoOrderHom  {α : Type u} [P : PartialOrder α] [PartialOrder β] (f : α ≃o β) : α →o β where
+toFun := f.toFun
+monotone' := by
+  intro a b aleb
+  simp
+  apply aleb
+
+lemma IsoisIso {α : Type u} [P : PartialOrder α] [PartialOrder β] {f : α ≃o β} : IsIso (IsotoOrderHom f) := by
+  constructor
+  constructor
+  intro x y fxy
+  have h' : f x = f y := by
+    calc
+      f x = IsotoOrderHom f x := by apply Eq.refl
+      _ = IsotoOrderHom f y := by apply fxy
+      _ = f y := by apply Eq.refl
+  simp_all[h']
+  intro x
+  have h' : IsotoOrderHom f (f.invFun x) = x := by
+    calc
+      IsotoOrderHom f (f.invFun x) = f (f.invFun x) := by apply Eq.refl
+      _ = x := by simp
+  exact Exists.intro (Equiv.invFun f.toEquiv x) h'
+  intro x y xley
+  have h' : f x≤f y:= by
+    calc
+      f x = IsotoOrderHom f x := by apply Eq.refl
+      _ ≤ IsotoOrderHom f y  := by simp_all[xley]
+      _ = f y := by apply Eq.refl
+  simp_all
+
 def SubProductoNormal {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) (h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := β) f a)) : Type (β × α) :=
 {(x,p) // le (f p) x}
-theorem ProjectonRestrictInitSegisIso {α : Type u} [RightNormalBand α] : ∀ a : α, IsIso (InitialRestriction (BandHomtoOrdHom (ProjCann (h := Project))) a ) := by
+--theorem ProjectonRestrictInitSegisIso {α : Type u} [RightNormalBand α] : ∀ a : α, IsIso (InitialRestriction (BandHomtoOrdHom (ProjCann (h := Project))) a ) := by
 
 theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNormal P ↔ IsNormal' P := by
   constructor
-  sorry
+  intro x
+  rcases x with ⟨U,hu⟩
+  rcases hu with ⟨A,HA⟩
+  rcases HA with ⟨g,hg⟩
+  have g' : IsIso (IsotoOrderHom g) := by
+    apply IsoisIso
+  have w : ∀ a : α, IsIso (InitialRestriction (OrderHom.comp (OrderProj (α:= U) (h := ProjectCong A)) g) a) := by
+    apply IsoComp'
+    apply RestrictProjectIsIso
+    apply g'
+
   sorry
