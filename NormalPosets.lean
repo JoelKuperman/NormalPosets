@@ -1,7 +1,6 @@
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Order.Hom.Basic
 import Mathlib.Order.Lattice
-import Mathlib.Algebra.Hom.Group.Defs
 import Mathlib.Data.Set.Intervals.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.Order.Filter.Partial
@@ -10,17 +9,40 @@ import Mathlib.Order.Category.PartOrd
 import Mathlib.Algebra.Free
 import Mathlib.GroupTheory.Subsemigroup.Basic
 import Mathlib.GroupTheory.Subsemigroup.Operations
+import Mathlib.Logic.Function.Basic
+import Mathlib.Logic.Function.Conjugate
+import Mathlib.Logic.Function.Iterate
 
-#check Quot
+
+
 section Coerciones
-variable {α : Type u} {a b c d : α}
-def injective (f : X → Y) : Prop :=
+variable {α β: Type u} {a b c d : α}
+
+
+def injective (f : α → β) : Prop :=
 ∀ x₁ x₂, f x₁ = f x₂ → x₁ = x₂
 
-def surjective (f : X → Y) : Prop :=
+def surjective (f : α → β) : Prop :=
 ∀ y, ∃ x, f x = y
 
-def bijective (f : X → Y) := injective f ∧ surjective f
+def bijective (f : α → β) := injective f ∧ surjective f
+
+lemma ExistInverse {f: α → β} {h : bijective f} : ∃ g, Function.LeftInverse g f ∧ Function.RightInverse g f := by
+  apply Function.bijective_iff_has_inverse.1
+  constructor
+  intro x y
+  apply h.1
+  intro x
+  apply h.2
+
+lemma IsInverse {f: α → β}[Nonempty α] {h : bijective f} : Function.LeftInverse (Function.invFun f) f ∧ Function.RightInverse (Function.invFun f) f := by
+  constructor
+  apply Function.leftInverse_invFun
+  intro x y
+  apply h.1
+  apply Function.rightInverse_invFun
+  intro x
+  apply h.2
 
 def range (f : α → β) : Set β := --rango de una función
   { b | ∃ a, b = f a }
@@ -36,6 +58,7 @@ def cod_res (f : α → β) (s : Set β) (h: range f ⊆ s): α → s := fun x =
     apply h
     apply h₂
   ⟨f x, h₃⟩
+
 
 def res (f : α → β) (s : Set α) : α →. β := --de PFun
   (PFun.lift f).restrict s.subset_univ
@@ -93,7 +116,7 @@ def OrdHomRange [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set
 end Coerciones
 
 section RightNormalBand
-
+variable {α : Type u} [Nonempty α]
 
 class RightNormalBand (α : Type u) extends Semigroup α where --Definición de banda normal a derecha
   mul_idem : ∀ a : α , a * a = a
@@ -182,7 +205,6 @@ lemma InitIsDec' {α : Type u} [PartialOrder α] (a : α) : Decrec (Set.Iic a):=
 lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : Closed S := by --Prueba de que en una banda normal los decrecientes son cerrados
   intro x y
   have h' : x * y ≤ y:= by apply por_is_leq
-  show_term
   intro _ h'''
   apply h
   apply h'''
@@ -192,6 +214,7 @@ end RightNormalBand
 end RightNormalBand
 section NormalPosets
 
+#check Equiv.bijective
 
 def InitialSegment {α : Type u} [PartialOrder α] (a : α) : Set α := {b | b ≤ a}
 
@@ -293,7 +316,7 @@ end Subestructuras
 
 
 section Productos
-instance BandProduct [RightNormalBand α] [RightNormalBand β] : RightNormalBand (α × β) where
+instance BandProduct (A : RightNormalBand α) (B: RightNormalBand β) : RightNormalBand (α × β) where
   mul_idem := by
     intro x
     have h' : x.fst * x.fst = x.fst := by apply RightNormalBand.mul_idem
@@ -672,7 +695,7 @@ theorem QuotInf [RightNormalBand α] : ∀ a b c : Quot Project, QuotBand.leq a 
 
 
 
-instance QuotSemilattice [RightNormalBand α] : SemilatticeInf (Quot Project (α:= α)) where
+instance QuotSemilattice (A : RightNormalBand α) : SemilatticeInf (Quot Project (α:= α)) where
 inf := QuotProd
 le := QuotBand.leq
 le_refl := QuotBand.refl_le
@@ -693,38 +716,39 @@ theorem SLNorm : ∀ a b c : α, a ⊓ b ⊓ c = b ⊓ a ⊓ c := by
   intro a b c
   simp [inf_comm]
 
-instance SemilatticeNormal : RightNormalBand α where
+instance SemilatticeNormal (S: SemilatticeInf α) : RightNormalBand α where
   mul := Inf.inf
   mul_assoc := by apply inf_assoc
   mul_norm := SLNorm
   mul_idem := by apply inf_idem
 
-theorem SemilatticeRespect [SemilatticeInf α] {x y : α} : SemilatticeNormal.leq x y ↔ x ≤ y := by
+theorem SemilatticeRespect {S:SemilatticeInf α} {x y : α} : (SemilatticeNormal S).leq x y ↔ x ≤ y := by
 constructor
 intro xley
 have h' : x ⊓ y = x := by apply xley
 simp_all[h', inf_le_right]
-apply xley
 intro xy
 have h' : x ⊓ y = x := by
   apply le_antisymm
-  exact Eq.le xy
-  exact Eq.ge xy
+  apply inf_le_left
+  apply le_inf
+  apply le_refl
+  apply xy
 apply h'
 
 end Semilattices
--- section Antichains
--- variable {α : Type u}
+section Antichains
+ variable {α : Type u}
 
--- class Antichain (α : Type u) extends PartialOrder α where
---   incomp : ∀ (x y : α), x ≤ y → x = y
+--class Antichain (α : Type u) extends PartialOrder α where
+ -- incomp : ∀ (x y : α), x ≤ y → x = y
 
--- instance Anticadena : Antichain α where
---   le := Eq
---   le_refl := Eq.refl
---   le_trans := by
---     intro a b c ab bc
---     calc
+--instance Anticadena : Antichain α where
+  --le := Eq
+  --le_refl := Eq.refl
+  --le_trans := by
+    --intro a b c ab bc
+   --calc
 --       a = b := by apply ab
 --       _ = c := by apply bc
 --   le_antisymm := by
@@ -734,30 +758,32 @@ end Semilattices
 --     intro x y xley
 --     simp_all
 
--- def AntichainProd [Antichain α] : Mul α  where
---   mul := fun _ y => y
+ def AntichainProd {α : Type u}: Mul α  where
+  mul := fun _ y => y
 
--- theorem ACProdAssoc [Antichain α] :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
---   intro a b c
---   calc
---     AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
---       apply Eq.refl
---     _ = AntichainProd.mul a (AntichainProd.mul b c) := by
---       apply Eq.refl
+ theorem ACProdAssoc {α : Type u} :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
+  intro a b c
+  calc
+    AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
+      apply Eq.refl
+   _ = AntichainProd.mul a (AntichainProd.mul b c) := by
+      apply Eq.refl
 
--- theorem ACProdRefl [Antichain α] :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
+   theorem ACProdRefl {α : Type u} :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
 
--- theorem ACProdNorm [Antichain α]: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
---   intro a b c
---   calc
---     AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
---     _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
+   theorem ACProdNorm {α : Type u}: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
+    intro a b c
+    calc
+        AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
+        _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
 
--- instance AntichainNormal [Antichain α] : RightNormalBand α where
---   mul := AntichainProd.mul
---   mul_assoc := ACProdAssoc
---   mul_norm := ACProdNorm
---   mul_idem := ACProdRefl
+
+
+instance AntichainNormal (α : Type u) : RightNormalBand α where
+  mul := AntichainProd.mul
+  mul_assoc := ACProdAssoc
+  mul_norm := ACProdNorm
+  mul_idem := ACProdRefl
 
 -- theorem AntichainRespect [h : Antichain α] {x y : α} : AntichainNormal.leq x y ↔ x ≤ y := by
 --   constructor
@@ -780,9 +806,37 @@ end Semilattices
 
 
 section Principal
-variable {α β : Type u} [RightNormalBand α]
+variable {α β : Type u} [Nonempty α] [Nonempty β] [RightNormalBand α]
 #check SemilatticeInf
+
  def MapTo {α : Type u} [PartialOrder α] (b c: α) {h' : b ≤ c } : Set.Iic c := ⟨b, h'⟩
+
+theorem InitInject [PartialOrder α] [PartialOrder β] {f: α →o β} {h : ∀a : α, IsIso (InitialRestriction f a)} :∀ a b, (∃c, a ≤ c ∧ b≤ c ∧ f a= f b) → a = b   := by
+    intro s t ec
+    rcases ec with ⟨c, lc⟩
+    have w : (InitialRestriction f c ⟨s,by simp_all[lc]⟩).1 = (InitialRestriction f c ⟨t,by simp_all[lc]⟩).1 := by
+      calc
+        (InitialRestriction f c ⟨s,by simp_all[lc]⟩).1 = f s := by apply Eq.refl
+        _ = f t := by simp_all[lc]
+        _ = (InitialRestriction f c ⟨t,by simp_all[lc]⟩).1 := by apply Eq.refl
+
+    have w' : (InitialRestriction f c ⟨s,by simp_all[lc]⟩) = (InitialRestriction f c ⟨t,by simp_all[lc]⟩) := by
+      exact SetCoe.ext w
+    have w'' : MapTo s c = MapTo t c := by
+      calc
+        MapTo s c = ⟨s, by simp_all[lc]⟩ := by apply Eq.refl
+        _ = ⟨t, by simp_all[lc]⟩ := by
+          apply (h c).left.left
+          apply w'
+        _ = MapTo t c := by apply Eq.refl
+    calc
+      s = (MapTo s c).1 := by
+        exact rfl
+      _ = (MapTo t c).1 := by
+        exact congrArg Subtype.val w''
+      _ = t := by exact rfl
+
+
 
 theorem IsoComp' {α β γ: Type u} [PartialOrder α][PartialOrder β] [PartialOrder γ] {f : α →o γ} {g : β →o α} {h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := γ) f a)}{h' : IsIso g} : ∀(a : β), IsIso (InitialRestriction (α := β) (β := γ) (OrderHom.comp f g) a) := by
   intro a
@@ -912,9 +966,184 @@ lemma IsoisIso {α : Type u} [P : PartialOrder α] [PartialOrder β] {f : α ≃
       _ = f y := by apply Eq.refl
   simp_all
 
-def SubProductoNormal {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) (h : ∀(a : α), IsIso (InitialRestriction (α := α) (β := β) f a)) : Type (β × α) :=
-{(x,p) // le (f p) x}
---theorem ProjectonRestrictInitSegisIso {α : Type u} [RightNormalBand α] : ∀ a : α, IsIso (InitialRestriction (BandHomtoOrdHom (ProjCann (h := Project))) a ) := by
+def ProductoNormal {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β ) : RightNormalBand (β × α) :=
+BandProduct (SemilatticeNormal S) (AntichainNormal α)
+
+def SubProducto {α β : Type u} (P : PartialOrder α) (S : SemilatticeInf β) (f : α →o β )  : Set (β × α) :=
+  {x | x.1 ≤ f x.2}
+lemma ClosedSubProducto {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β }  : Closed (SubProducto P S f):= by
+  intro x y _ yis
+  have h : (x * y).1 ≤ f (x * y).2 := by
+    calc
+      (x * y).1 = x.1 * y.1 := by simp
+      _ ≤ y.1 := by apply RightNormalBand.por_is_leq
+      _ ≤ f y.2 := by apply yis
+      _ = f (x.2 * y.2) := by apply Eq.refl
+      _ = f (x * y).2 := by apply Eq.refl
+  apply h
+
+def SubProductoNormal {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } : RightNormalBand (SubProducto P S f) :=
+  SubBanda (s:= SubProducto P S f) (h:= ClosedSubProducto)
+
+
+noncomputable def Proy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } (x : SubProducto P S f) : α :=
+  (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1, x.2⟩).1
+
+noncomputable def KerProy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} (x y : SubProducto P S f) : Prop := Proy x = Proy y
+
+lemma KerProyRefl {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x : SubProducto P S f, KerProy x x := by
+  intro x
+  apply Eq.refl
+
+
+lemma KerProySymm {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x y: SubProducto P S f, KerProy x y → KerProy y x := by
+  intro x y kxy
+  have k' : Proy y = Proy x := by
+   rw[kxy]
+  apply k'
+
+lemma KerProyTrans {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x y z: SubProducto P S f, KerProy x y → KerProy y z → KerProy x z := by
+  intro x y z xry yrz
+  have h' : Proy x = Proy z := by
+    calc
+      Proy x = Proy y := by rw[xry]
+      _ = Proy z := by rw[yrz]
+  apply h'
+
+
+
+lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x y z w: SubProducto P S f, KerProy x y → KerProy z w → KerProy (x * z) (y * w) := by
+  intro x y z w xry zrw
+  have h' :  (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1, x.2⟩).1 =  (Function.invFun (InitialRestriction f y.1.2) ⟨y.1.1, y.2⟩).1 := by
+   apply xry
+  have g' : (Function.invFun (InitialRestriction f z.1.2) ⟨z.1.1, z.2⟩).1 =  (Function.invFun (InitialRestriction f w.1.2) ⟨w.1.1, w.2⟩).1 := by
+   apply zrw
+  have h'' : x.1.1 = y.1.1 := by
+    calc
+      x.1.1 =(InitialRestriction f x.1.2 (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1,x.2⟩)).1   := by
+        rw[(IsInverse (f:= InitialRestriction f x.1.2) (h:= (hf x.1.2).1)).right]
+      _ = (f (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1,x.2⟩).1) := by apply Eq.refl
+      _ = (f (Function.invFun (InitialRestriction f y.1.2) ⟨y.1.1,y.2⟩).1) := by rw[h']
+      _ = (InitialRestriction f y.1.2 (Function.invFun (InitialRestriction f y.1.2) ⟨y.1.1,y.2⟩)).1 := by
+        apply Eq.refl
+      _ = y.1.1 := by rw[(IsInverse (f:= InitialRestriction f y.1.2) (h:= (hf y.1.2).1)).right]
+
+  have h''' : z.1.1 = w.1.1 := by
+      calc
+      z.1.1 =(InitialRestriction f z.1.2 (Function.invFun (InitialRestriction f z.1.2) ⟨z.1.1,z.2⟩)).1   := by
+        rw[(IsInverse (f:= InitialRestriction f z.1.2) (h:= (hf z.1.2).1)).right]
+      _ = (f (Function.invFun (InitialRestriction f z.1.2) ⟨z.1.1,z.2⟩).1) := by apply Eq.refl
+      _ = (f (Function.invFun (InitialRestriction f w.1.2) ⟨w.1.1,w.2⟩).1) := by rw[g']
+      _ = (InitialRestriction f w.1.2 (Function.invFun (InitialRestriction f w.1.2) ⟨w.1.1,w.2⟩)).1 := by
+        apply Eq.refl
+      _ = w.1.1 := by rw[(IsInverse (f:= InitialRestriction f w.1.2) (h:= (hf w.1.2).1)).right]
+
+  have k₁ : (x.1.1 * z.1.1) ≤ f z.1.2 := by
+    calc
+      x.1.1*z.1.1 ≤z.1.1 := by apply RightNormalBand.por_is_leq
+      _ ≤ f z.1.2 := by apply z.2
+
+  have k₂ : (y.1.1 * w.1.1) ≤ f w.1.2 := by
+    calc
+     y.1.1 * w.1.1 ≤  w.1.1 := by apply RightNormalBand.por_is_leq
+      _ ≤ f w.1.2 := by apply w.2
+
+  have k : Proy (x * z) = (Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by
+    calc
+       Proy (x * z) = (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩).1 := by apply Eq.refl
+       _ = (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 := by rfl
+       _ = ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by
+        apply InitInject (β:= β) (h:=hf)
+        have w' : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ z.1.2 := by
+          calc
+            (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ (x*z).1.2 := by apply (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).2
+            _ = x.1.2 * z.1.2 := by rfl
+            _ = z.1.2 := by rfl
+        have w'' : ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 := by apply ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).2
+        have w''' : f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
+          calc
+            f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = ((InitialRestriction f (x * z).1.2) ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩))).1 :=
+              by exact rfl
+            _ = x.1.1 * z.1.1 := by rw[(IsInverse (f:= InitialRestriction f (x * z).1.2) (h:= (hf (x * z).1.2).1)).right]
+            _ = ((InitialRestriction f z.1.2) ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩))).1 := by
+                rw[(IsInverse (f:= InitialRestriction f z.1.2) (h:= (hf z.1.2).1)).right]
+            _ = f ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by rfl
+        have w : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ z.1.2 ∧ ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
+          constructor
+          apply w'
+          constructor
+          apply w''
+          apply w'''
+        exact Exists.intro z.1.2 w
+
+  have k' : Proy (y * w) = (Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩).1 := by
+    calc
+       Proy (y * w) = (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y * w).1.1, (y*w).2⟩).1 := by apply Eq.refl
+       _ = (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1 := by rfl
+       _ = ((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).1 := by
+        apply InitInject (β:= β) (h:=hf)
+        have w' : (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1 ≤ w.1.2 := by
+          calc
+            (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1 ≤ (y*w).1.2 := by apply (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).2
+            _ = y.1.2 * w.1.2 := by rfl
+            _ = w.1.2 := by rfl
+        have w'' : ((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).1 ≤ w.1.2 := by apply ((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).2
+        have w''' : f ((Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1) = f (((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).1) := by
+          calc
+            f ((Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1) = ((InitialRestriction f (y * w).1.2) ((Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩))).1 :=
+              by exact rfl
+            _ = y.1.1 * w.1.1 := by rw[(IsInverse (f:= InitialRestriction f (y * w).1.2) (h:= (hf (y * w).1.2).1)).right]
+            _ = ((InitialRestriction f w.1.2) ((Function.invFun (InitialRestriction f  w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩))).1 := by
+                rw[(IsInverse (f:= InitialRestriction f w.1.2) (h:= (hf w.1.2).1)).right]
+            _ = f ((Function.invFun (InitialRestriction f  w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩).1) := by rfl
+        have wz : (Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1 ≤ w.1.2 ∧ ((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).1 ≤ w.1.2 ∧ f ((Function.invFun (InitialRestriction f (y * w).1.2) ⟨(y.1.1 * w.1.1), (y*w).2⟩).1) = f (((Function.invFun (InitialRestriction f w.1.2)) ⟨(y.1.1 * w.1.1), k₂⟩).1) := by
+          constructor
+          apply w'
+          constructor
+          apply w''
+          apply w'''
+        exact Exists.intro w.1.2 wz
+
+  have j : Proy (x * z) = Proy (y * w) := by
+    apply InitInject (β:= β) (h:=hf)
+    have s: Proy (x * z) ≤ z.1.2 := by
+      calc
+         Proy (x * z) = (Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by apply k
+         _ ≤ z.1.2 := by apply (Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).2
+    have s': Proy (y * w) ≤ z.1.2 := by
+      calc
+        Proy (y * w) = (Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩).1 := by apply k'
+        _ ≤ (Function.invFun (InitialRestriction f w.1.2) ⟨(w.1.1), k₂⟩).1  := by
+          apply (hf w.1.2).2
+          calc
+            f ((Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩).1) = ((InitialRestriction f w.1.2) ((Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩))).1 := by rfl
+            _ = y.1.1 * w.1.1 := by rw[(IsInverse (f:= InitialRestriction f  w.1.2) (h:= (hf w.1.2).1)).right]
+            _ ≤ w.1.1 := by apply RightNormalBand.por_is_leq
+            _ = ((InitialRestriction f w.1.2) ((Function.invFun (InitialRestriction f w.1.2) ⟨(w.1.1), k₂⟩))).1 := by rw[(IsInverse (f:= InitialRestriction f  w.1.2) (h:= (hf w.1.2).1)).right]
+            _ = f ((Function.invFun (InitialRestriction f w.1.2) ⟨(w.1.1), w.2⟩).1) := by rfl
+        _ = (Function.invFun (InitialRestriction f z.1.2) ⟨(z.1.1), z.2⟩).1 := by rw[g']
+        _ ≤ z.1.2 := by apply (Function.invFun (InitialRestriction f z.1.2) ⟨(z.1.1), z.2⟩).2
+    have s'' : f (Proy (x*z) ) = f ( Proy (y*w) ) := by
+      calc
+        f (Proy (x * z)) = f ((Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by rw[k]
+        _ = ((InitialRestriction f z.1.2) ((Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩))).1 := by rfl
+        _ = x.1.1*z.1.1 := by rw[(IsInverse (f:= InitialRestriction f  z.1.2) (h:= (hf z.1.2).1)).right]
+        _ = y.1.1 * w.1.1 := by
+          rw[h'']
+          rw[h''']
+        _ = ((InitialRestriction f w.1.2) ((Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂ ⟩))).1 := by rw[(IsInverse (f:= InitialRestriction f  w.1.2) (h:= (hf w.1.2).1)).right]
+        _ = f ((Function.invFun (InitialRestriction f w.1.2) ⟨(y.1.1 * w.1.1), k₂⟩).1) := by rfl
+        _ = f (Proy (y * w)) := by rw[k']
+    have s''' : Proy (x * z) ≤ z.1.2 ∧ Proy (y * w) ≤ z.1.2 ∧ f (Proy (x*z) ) = f ( Proy (y*w) ) := by
+      constructor
+      apply s
+      constructor
+      apply s'
+      apply s''
+    exact Exists.intro z.1.2 s'''
+  exact zrw
+
+
 
 theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNormal P ↔ IsNormal' P := by
   constructor
@@ -928,5 +1157,11 @@ theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNor
     apply IsoComp'
     apply RestrictProjectIsIso
     apply g'
-
+  have hf : ∃ f : OrderHom α (Quot (ProjectCong A).r), ∀(a : α), IsIso (InitialRestriction f a) := by
+    exact Exists.intro (OrderHom.comp OrderProj ↑g) w
+  have hf' : ∃ x : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by
+    refine Exists.intro (QuotSemilattice A) hf
+  simp_all
+  exact Exists.intro (Quot (ProjectCong A).r) hf'
   sorry
+#check SemilatticeInf.toPartialOrder
