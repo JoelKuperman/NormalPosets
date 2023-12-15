@@ -242,8 +242,7 @@ theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {
 def InitialRestriction {α β: Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(a : α)  : Set.Iic a →o Set.Iic (f a) := --Toma una f y un a y devuelve f restringida al segmento inicial de a con codominio segmento inicial de (f a)
     OrdHomRange f (Set.Iic a) (Set.Iic (f a)) (RestrictionInitial)
 
-def IsNormal' {α : Type u} (_ : PartialOrder α) : Prop := --Caracterización orden teorética de los posets normales
-∃ (α' : Type u), ∃(_ : SemilatticeInf α'), ∃(f : OrderHom α α'), ∀(a : α), IsIso (InitialRestriction f a)
+
 
 end NormalPosets
 
@@ -251,15 +250,15 @@ section Subestructuras
 
 -- variable {S : Type*} [RightNormalBand α] [SetLike  S α] [hA : MulMemClass S α] (s : S
 
-def Closed [RightNormalBand α] (p : Set α) : Prop := ∀ x y : α, x ∈ p → y ∈ p → x * y ∈ p
+def Closed [RightNormalBand α] (p : Set α) : Prop := ∀ x y : p, x.1 * y.1 ∈ p
 
 variable {α : Type u} [RightNormalBand α]
 
+
+
 def ProdRestrict {s : Set α} {h : Closed s} : s → s → s := --Restricción de un producto a un cerrado
 fun x y =>
-  ⟨x * y, by apply h
-             · apply x.2
-             · apply y.2 ⟩
+  ⟨x.1 * y.1, by apply h x y⟩
 
 
 
@@ -275,25 +274,14 @@ theorem RestricAsoc {s : Set α} {h : Closed s} : ∀ x y z: s, ProdRestrict (s:
   intro x y z
   calc
     ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) x y) z = ⟨x * y * z, _⟩ := by apply Eq.refl
-    _ = ⟨x * (y * z), by
-                      apply h
-                      · simp
-                      · apply h
-                        · simp
-                        · simp⟩ := by simp_all[mul_assoc]
+    _ = ⟨x.1 * (y.1 * z.1), _⟩ := by simp_all[mul_assoc]
     _ = ProdRestrict (s:=s) (h:=h) x (ProdRestrict (s:=s) (h:=h) y z) := by apply Eq.refl
 
 theorem RestricNorm {s : Set α} {h : Closed s} : ∀ x y z: s, ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) x y) z = ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) y x) z := by
   intro x y z
   calc
      ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) x y) z = ⟨x * y * z, _⟩ := by apply Eq.refl
-    _ = ⟨y * x * z , by
-                      apply h
-                      apply h
-                      simp_all
-                      simp
-                      simp
-                      ⟩ := by simp_all[RightNormalBand.mul_norm]
+    _ = ⟨y * x * z , _⟩ := by simp_all[RightNormalBand.mul_norm]
     _ = ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) y x) z := by apply Eq.refl
 
 
@@ -312,6 +300,21 @@ end Subestructuras
 
 
 section Productos
+def MulProd [RightNormalBand α] [RightNormalBand β] : Mul (α × β) where
+  mul := fun x y => ⟨x.1 * y.1, x.2 * y.2⟩
+
+lemma MulProdAssoc [RightNormalBand α] [RightNormalBand β] : ∀ x y z : α × β, x * y * z = x * (y * z) := by
+  intro x y z
+  calc
+    x * y * z = ⟨x.1 * y.1, x.2 * y.2⟩ * z := by apply Eq.refl
+    _ = ⟨x.1 * y.1 * z.1, x.2 * y.2 * z.2⟩ := by apply Eq.refl
+    _ = ⟨x.1 * (y.1 * z.1), x.2 * (y.2 * z.2)⟩ := by
+      rw[←mul_assoc]
+      rw[←mul_assoc]
+    _ = x * ⟨y.1 * z.1, y.2 * z.2⟩:= by apply Eq.refl
+    _ = x * (y * z) := by apply Eq.refl
+
+
 instance BandProduct [A : RightNormalBand α] [B: RightNormalBand β] : RightNormalBand (α × β) where
   mul_idem := by
     intro x
@@ -726,6 +729,33 @@ theorem ExistsInitIso [RightNormalBand α] : ∃ α' : Type u, ∃ S : Semilatti
   use (OrderProj (h := ProjectCong _))
   apply RestrictProjectIsIso
 end Congruencias
+def AntichainProd {α : Type u}: Mul α  where
+  mul := fun _ y => y
+
+ theorem ACProdAssoc {α : Type u} :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
+  intro a b c
+  calc
+    AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
+      apply Eq.refl
+   _ = AntichainProd.mul a (AntichainProd.mul b c) := by
+      apply Eq.refl
+
+   theorem ACProdRefl {α : Type u} :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
+
+   theorem ACProdNorm {α : Type u}: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
+    intro a b c
+    calc
+        AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
+        _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
+
+
+@[default_instance 1]
+instance AntichainNormal {α : Type u} [PartialOrder α] : RightNormalBand α where
+  mul := AntichainProd.mul
+  mul_assoc := ACProdAssoc
+  mul_norm := ACProdNorm
+  mul_idem := ACProdRefl
+
 section Semilattices
 variable {α : Type u} [SemilatticeInf α]
  #check SemilatticeInf
@@ -735,7 +765,7 @@ theorem SLNorm : ∀ a b c : α, a ⊓ b ⊓ c = b ⊓ a ⊓ c := by
   simp [inf_comm]
 
 
-@[default_instance 200]
+@[default_instance 2000]
 instance SemilatticeNormal [S: SemilatticeInf α] : RightNormalBand α where
   mul := Inf.inf
   mul_assoc := by apply inf_assoc
@@ -777,25 +807,6 @@ section Antichains
 --   incomp := by
 --     intro x y xley
 --     simp_all
-
- def AntichainProd {α : Type u}: Mul α  where
-  mul := fun _ y => y
-
- theorem ACProdAssoc {α : Type u} :∀ a b c : α,  AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul a (AntichainProd.mul b c) := by
-  intro a b c
-  calc
-    AntichainProd.mul (AntichainProd.mul a b) c =  AntichainProd.mul b c := by
-      apply Eq.refl
-   _ = AntichainProd.mul a (AntichainProd.mul b c) := by
-      apply Eq.refl
-
-   theorem ACProdRefl {α : Type u} :∀ a : α, AntichainProd.mul a a = a := by apply Eq.refl
-
-   theorem ACProdNorm {α : Type u}: ∀ a b c : α, AntichainProd.mul (AntichainProd.mul a b) c = AntichainProd.mul (AntichainProd.mul b a) c := by
-    intro a b c
-    calc
-        AntichainProd.mul (AntichainProd.mul a b) c = c := by apply Eq.refl
-        _ = AntichainProd.mul (AntichainProd.mul b a) c := by apply Eq.refl
 
 
 -- @[default_instance 1]
@@ -990,62 +1001,68 @@ lemma IsoisIso {α : Type u} [P : PartialOrder α] [PartialOrder β] {f : α ≃
 
 
 
-set_option trace.Meta.synthInstance true
 --Un subconjunto del producto anterior dado por una propiedad respecto a una f
-def SubProducto {α β : Type u} (_ : PartialOrder α) (S: SemilatticeInf β) (f : α →o β )  : Set (β × α) :=
+def SubProducto {α β : Type u} [PartialOrder α] [SemilatticeInf β] (f : α →o β )  : Set (β × α) :=
   {x | x.1 ≤ f x.2}
 
-@[default_instance 1]
-instance AntichainNormal {α : Type u} : RightNormalBand α where
-  mul := AntichainProd.mul
-  mul_assoc := ACProdAssoc
-  mul_norm := ACProdNorm
-  mul_idem := ACProdRefl
+-- @[default_instance 1000]
+-- instance OrderSL {β : Type u} [SemilatticeInf β] : PartialOrder β :=
+--   RightNormalBand.orden_parcial
+
 
 --Producto de un semirretículo por una anticadena
+@[default_instance 200]
 instance ProductoNormal {α β : Type u} [PartialOrder α] [S : SemilatticeInf β]  : RightNormalBand (β × α) :=
   BandProduct (A := SemilatticeNormal (S := S)) (B := AntichainNormal (α := α))
 
 --attribute [-instance] AntichainNormal
 -- El subconjunto anterior es cerrado
 
+set_option trace.Meta.synthInstance true
 #check ProductoNormal
-lemma ClosedSubProducto {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β }  : Closed (SubProducto P S f):= by
+lemma ClosedSubProducto {α β : Type u} [P : PartialOrder α] [S : SemilatticeInf β] {f : α →o β}  : Closed (SubProducto f):= by
   intro x y _ yis
   have h : (x * y).1 ≤ f (x * y).2 := by
     calc
       (x * y).1 = x.1 * y.1 := by apply Eq.refl
-      _ ≤ y.1 := by apply RightNormalBand.por_is_leq
+      _ ≤ y.1 := by
+        apply RightNormalBand.por_is_leq
       _ ≤ f y.2 := by apply yis
-      _ = f (x.2 * y.2) := by apply Eq.refl
+      _ = f (x.2 * y.2) := by apply rfl
       _ = f (x * y).2 := by apply Eq.refl
   apply h
 
+
+
+
 --Definicion de una banda sobre este subconjunto
-def SubProductoNormal {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } : RightNormalBand (SubProducto P S f) :=
-  SubBanda (s:= SubProducto P S f) (h:= ClosedSubProducto)
+@[default_instance 200]
+instance SubProductoNormal {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } : RightNormalBand (SubProducto f) :=
+  SubBanda (s:= SubProducto f) (h:= ClosedSubProducto)
+
+
 
 --Defino una función cuyo kernel resultará congruencia
-noncomputable def Proy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } (x : SubProducto P S f) : α :=
+noncomputable def Proy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } (x : SubProducto f) : α :=
   (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1, x.2⟩).1
 
 --El kernel
-noncomputable def KerProy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} (x y : SubProducto P S f) : Prop := Proy x = Proy y
+noncomputable def KerProy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} (x y : SubProducto f) : Prop := Proy x = Proy y
 
 --Reflexividad
-lemma KerProyRefl {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : SubProducto P S f, KerProy x x := by
+lemma KerProyRefl {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : SubProducto f, KerProy x x := by
   intro x
   apply Eq.refl
 
 --Simetría
-lemma KerProySymm {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y: SubProducto P S f, KerProy x y → KerProy y x := by
+lemma KerProySymm {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y: SubProducto f, KerProy x y → KerProy y x := by
   intro x y kxy
   have k' : Proy y = Proy x := by
    rw[kxy]
   apply k'
 
 --Transitividad
-lemma KerProyTrans {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y z: SubProducto P S f, KerProy x y → KerProy y z → KerProy x z := by
+lemma KerProyTrans {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y z: SubProducto f, KerProy x y → KerProy y z → KerProy x z := by
   intro x y z xry yrz
   have h' : Proy x = Proy z := by
     calc
@@ -1054,7 +1071,7 @@ lemma KerProyTrans {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β
   apply h'
 
 --Respeta producto
-lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x y z w: SubProducto P S f, KerProy x y → KerProy z w → KerProy (x * z) (y * w) := by
+lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : ∀ x y z w: SubProducto f, KerProy x y → KerProy z w → KerProy (x * z) (y * w) := by
   intro x y z w xry zrw
   have h' :  (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1, x.2⟩).1 =  (Function.invFun (InitialRestriction f y.1.2) ⟨y.1.1, y.2⟩).1 := by
    apply xry
@@ -1080,37 +1097,53 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
         apply Eq.refl
       _ = w.1.1 := by rw[(IsInverse (f:= InitialRestriction f w.1.2) (h:= (hf w.1.2).1)).right]
 
-  have k₁ : (x.1.1 * z.1.1) ≤ f z.1.2 := by
-    calc
-      x.1.1*z.1.1 ≤z.1.1 := by apply RightNormalBand.por_is_leq
-      _ ≤ f z.1.2 := by apply z.2
 
+
+  have k₁ : x.1.1 * z.1.1 ≤ f z.1.2 := by
+    calc
+      x.1.1 * z.1.1 = (x.1 * z.1).1 := by
+        apply Eq.refl
+      _ ≤ f (x.1 * z.1).2 := by
+        have k₁' : (x.1 * z.1) ∈ SubProducto f := by
+          apply ClosedSubProducto
+        apply k₁'
   have k₂ : (y.1.1 * w.1.1) ≤ f w.1.2 := by
     calc
      y.1.1 * w.1.1 ≤  w.1.1 := by apply RightNormalBand.por_is_leq
       _ ≤ f w.1.2 := by apply w.2
+  have k₃ : x.1.1 * z.1.1 ≤ f w.1.2 := by
+    calc
+      x.1.1 * z.1.1 = y.1.1 * w.1.1 := by
+        simp_all[h'',h''']
+      _ ≤ f w.1.2 := by apply k₂
+
+  have k₄ : x.1.1 * z.1.1 = (x * z).1.1 := by
+    calc
+      x.1.1 * z.1.1 = (x.1 * z.1).1 := by apply Eq.refl
+      _ = ((x * z).1).1 := by apply Eq.refl
+
+  have k₅ : y.1.1 * w.1.1 = (y * w).1.1 := by apply Eq.refl
+
 
   have k : Proy (x * z) = (Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by
     calc
        Proy (x * z) = (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩).1 := by apply Eq.refl
-       _ = (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 := by rfl
        _ = ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by
         apply InitInject (β:= β) (h:=hf)
-        have w' : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ z.1.2 := by
-          calc
-            (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ (x*z).1.2 := by apply (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).2
-            _ = x.1.2 * z.1.2 := by rfl
-            _ = z.1.2 := by rfl
+        have w' : (Function.invFun (InitialRestriction f z.1.2) ⟨x.1.1 * z.1.1, k₁⟩).1 ≤ z.1.2 := by
+         apply (Function.invFun (InitialRestriction f  z.1.2) ⟨x.1.1 * z.1.1, k₁⟩).2
+
         have w'' : ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 := by apply ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).2
-        have w''' : f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
+        have w''' : f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
           calc
-            f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = ((InitialRestriction f (x * z).1.2) ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩))).1 :=
+            f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩).1) = ((InitialRestriction f (x * z).1.2) ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩))).1 :=
               by exact rfl
-            _ = x.1.1 * z.1.1 := by rw[(IsInverse (f:= InitialRestriction f (x * z).1.2) (h:= (hf (x * z).1.2).1)).right]
+            _ = (x * z).1.1 := by rw[(IsInverse (f:= InitialRestriction f (x * z).1.2) (h:= (hf (x * z).1.2).1)).right]
             _ = ((InitialRestriction f z.1.2) ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩))).1 := by
                 rw[(IsInverse (f:= InitialRestriction f z.1.2) (h:= (hf z.1.2).1)).right]
+                apply?
             _ = f ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by rfl
-        have w : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1 ≤ z.1.2 ∧ ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
+        have w : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
           constructor
           apply w'
           constructor
@@ -1185,8 +1218,10 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
     exact Exists.intro z.1.2 s'''
   exact j
 
+
+
 --Defino una banda sobre el cociente por el kernel
-instance NormalQuot {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : Congruence (SubProducto P S f) where
+instance NormalQuot {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : Congruence (SubProducto f) where
   r := KerProy
   refl := by
     intro x
@@ -1200,7 +1235,7 @@ instance NormalQuot {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf �
     apply KerProyTrans
     apply kxy
     apply kyz
-  cong := by
+  cong := by show_term
     intro x y z w kxy kzw
     apply KerProyCong
     apply hf
@@ -1208,7 +1243,7 @@ instance NormalQuot {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf �
     apply kzw
 
 --Prueba de pertenencia a la subestructura que usare bastante
-lemma IsInSubProd {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : α, (f x, x) ∈ (SubProducto P S f) := by
+lemma IsInSubProd {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : α, (f x, x) ∈ (SubProducto f) := by
   intro x
   have h' : f x ≤ f x := by apply Preorder.le_refl
   exact h'
@@ -1222,10 +1257,10 @@ def IsNormalHom  {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} 
   toFun := IsNormalHom'
   monotone' := by
     intro x y xley
-    have k₁ : (f x * f y, y) ∈ (SubProducto P S f) := by
+    have k₁ : (f x * f y, y) ∈ (SubProducto f) := by
       have h' : f x * f y ≤ f y := by apply RightNormalBand.por_is_leq
       apply h'
-    have k₂ : (f x, y) ∈ (SubProducto P S f) := by
+    have k₂ : (f x, y) ∈ (SubProducto f) := by
       have h' : f x ≤ f y := by
         apply f.monotone'
         apply xley
@@ -1270,7 +1305,7 @@ def IsNormalHom  {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} 
           simp_all[h',k']
          _ =  Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r (⟨(f x , x), by apply IsInSubProd x⟩) := by apply h''
     apply h'
-
+sorry
 --Lo defino como iso, falta ver que la inversa preserva orden
 lemma NormalHomIsIso {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : IsIso (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) ):= by
   have k : ∀ w, w = (Function.invFun (InitialRestriction f w) ⟨f w, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  w⟩).1 := by
@@ -1301,7 +1336,7 @@ lemma NormalHomIsIso {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf 
       _ = Proy ⟨(f y,y),IsInSubProd y⟩ := by
         have h'' :  Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f x, x), by apply IsInSubProd x⟩ =  Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f y, y), by apply IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  y⟩ :=
           by exact fxy
-        apply CongSound (α := SubProducto P S f) (h:= NormalQuot)
+        apply CongSound (α := SubProducto f) (h:= NormalQuot)
         apply h''
 
 
@@ -1349,9 +1384,11 @@ noncomputable def NormalIso {α β : Type u} [Nonempty α] {P : PartialOrder α}
     sorry
     apply IsNormalHom.monotone'
 
+def IsNormal' {α : Type u} (_ : PartialOrder α) : Prop := --Caracterización orden teorética de los posets normales
+∃ (α' : Type u), ∃(_ : SemilatticeInf α'), ∃(f : OrderHom α α'), ∀(a : α), IsIso (InitialRestriction f a)
 
 
-theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNormal P ↔ IsNormal' P := by
+theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α][Nonempty α] : IsNormal P ↔ IsNormal' P := by
   constructor
   intro x
   rcases x with ⟨U,hu⟩
@@ -1368,29 +1405,12 @@ theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] : IsNor
   have hf' : ∃ x : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by
     refine Exists.intro (QuotSemilattice A) hf
   simp_all
-  apply Exists.intro (Quot (ProjectCong A).r) hf'
-  sorry
-  sorry
-  intro
-
-
-theorem NormalPosetsCharacterization' {α : Type u} [P : PartialOrder α] : IsNormal P ↔ IsNormal' P := by
-  constructor
+  apply Exists.intro (Quot (ProjectCong A).r)
+  use (QuotSemilattice A)
   intro x
-  rcases x with ⟨U,hu⟩
-  rcases hu with ⟨A,HA⟩
-  rcases HA with ⟨g,hg⟩
-  have g' : IsIso (IsotoOrderHom g) := by
-    apply IsoisIso
-  rcases ExistsInitIso (α := U) with ⟨C, hc⟩
-  rcases hc with ⟨S, hs⟩
+  rcases x with ⟨S, hs⟩
   rcases hs with ⟨f', hf⟩
-  use C
-  use S
-  use (OrderHom.comp f' (IsotoOrderHom (α:= α) (β:= U) g))
-  sorry
-  intro x
-  rcases x with ⟨U,hu⟩
-  rcases hu with ⟨A,HA⟩
-  rcases HA with ⟨f, hf⟩
-  use Quot (NormalQuot (α := α) (β:= U) (P:= P) (S := A) (f := f) (hf := hf)).r
+  rcases hf with ⟨g, hg⟩
+  use Quot (NormalQuot (P := P) (S := f') (f := g) (hf := hg)).r
+  use QuotBand (h := NormalQuot (P := P) (S := f') (f := g) (hf := hg))
+  use NormalIso
