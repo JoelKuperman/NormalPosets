@@ -201,7 +201,7 @@ lemma InitIsDec' {α : Type u} [PartialOrder α] (a : α) : Decrec (Set.Iic a):=
 
 lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : Closed S := by --Prueba de que en una banda normal los decrecientes son cerrados
   intro x y
-  have h' : x * y ≤ y:= by apply por_is_leq
+  have h' : x * y ≤ y := by apply por_is_leq
   intro _ h'''
   apply h
   apply h'''
@@ -211,7 +211,7 @@ end RightNormalBand
 end RightNormalBand
 section NormalPosets
 
-#check Equiv.bijective
+
 
 def InitialSegment {α : Type u} [PartialOrder α] (a : α) : Set α := {b | b ≤ a}
 
