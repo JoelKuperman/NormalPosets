@@ -1035,9 +1035,6 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
       x.1.1 * z.1.1 = (x.1 * z.1).1 := by apply Eq.refl
       _ = ((x * z).1).1 := by apply Eq.refl
 
-  have k₅ : y.1.1 * w.1.1 = (y * w).1.1 := by apply Eq.refl
-
-
   have k : Proy (x * z) = (Function.invFun (InitialRestriction f z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 := by
     calc
        Proy (x * z) = (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x * z).1.1, (x*z).2⟩).1 := by apply Eq.refl
@@ -1054,7 +1051,7 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
             _ = (x * z).1.1 := by rw[(IsInverse (f:= InitialRestriction f (x * z).1.2) (h:= (hf (x * z).1.2).1)).right]
             _ = ((InitialRestriction f z.1.2) ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩))).1 := by
                 rw[(IsInverse (f:= InitialRestriction f z.1.2) (h:= (hf z.1.2).1)).right]
-                apply?
+                exact k₄
             _ = f ((Function.invFun (InitialRestriction f  z.1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by rfl
         have w : (Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ ((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1 ≤ z.1.2 ∧ f ((Function.invFun (InitialRestriction f (x * z).1.2) ⟨(x.1.1 * z.1.1), (x*z).2⟩).1) = f (((Function.invFun (InitialRestriction f z.1.2)) ⟨(x.1.1 * z.1.1), k₁⟩).1) := by
           constructor
