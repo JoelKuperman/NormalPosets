@@ -191,15 +191,13 @@ def Closed {α : Type u} [Mul α] (S : Set α) : Prop := --Defino que un conjunt
 def Decrec {α : Type u } [PartialOrder α] (S : Set α) : Prop := --Definición de conjunto decreciente
   ∀ x y :α , x ∈ S → y ≤ x → y ∈ S
 
-lemma InitIsDec' {α : Type u} [PartialOrder α] (a : α) : Decrec (Set.Iic a):= by --Prueba de que los segmentos iniciales son decrecientes
-  intro x y
-  intro h h'
-  have h'' : x ≤ a := by apply h
-  have h''' : y ≤ a := by apply le_trans h' h''
-  apply h'''
+lemma InitIsDec' {α : Type u} [PartialOrder α] (a : α) : Decrec (Set.Iic a):= by exact fun x y h h' =>
+  let_fun h'' := h;
+  let_fun h''' := le_trans h' h'';
+  h'''
 
 
-lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : Closed S := by --Prueba de que en una banda normal los decrecientes son cerrados
+lemma DecIsSub {α : Type u} [RightNormalBand α] (S : Set α) (h : Decrec S) : Closed S := by  --Prueba de que en una banda normal los decrecientes son cerrados
   intro x y
   have h' : x * y ≤ y := by apply por_is_leq
   intro _ h'''
@@ -239,8 +237,6 @@ theorem RestrictionInitial {α β: Type u} [PartialOrder α] [PartialOrder β] {
 def InitialRestriction {α β: Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(a : α)  : Set.Iic a →o Set.Iic (f a) := --Toma una f y un a y devuelve f restringida al segmento inicial de a con codominio segmento inicial de (f a)
     OrdHomRange f (Set.Iic a) (Set.Iic (f a)) (RestrictionInitial)
 
-
-
 end NormalPosets
 
 section Subestructuras
@@ -252,13 +248,10 @@ def Closed [RightNormalBand α] (p : Set α) : Prop := ∀ x y : α, x ∈ p →
 variable {α : Type u} [RightNormalBand α]
 
 
-
-def ProdRestrict {s : Set α} {h : Closed s} : s → s → s := --Restricción de un producto a un cerrado
+--Restricción de un producto a un cerrado
+def ProdRestrict {s : Set α} {h : Closed s} : s → s → s :=
 fun x y =>
-  ⟨x * y, by
-            apply h
-            apply x.2
-            apply y.2⟩
+  ⟨x * y, by exact h (↑x) (↑y) x.property y.property⟩
 
 
 
@@ -284,16 +277,12 @@ theorem RestricNorm {s : Set α} {h : Closed s} : ∀ x y z: s, ProdRestrict (s:
     _ = ⟨y * x * z , _⟩ := by simp_all[RightNormalBand.mul_norm]
     _ = ProdRestrict (s:=s) (h:=h) (ProdRestrict (s:=s) (h:=h) y x) z := by apply Eq.refl
 
-
-
-
-def SubBanda {s : Set α} {h : Closed s}: RightNormalBand s where --Subestructura de una banda es una banda
+--Subestructura. Banda definida sobre un conjunto cerrado s.
+instance SubBanda {s : Set α} {h : Closed s}: RightNormalBand s where
   mul := ProdRestrict (s := s) (h :=h)
   mul_assoc := RestricAsoc
   mul_norm :=  RestricNorm
   mul_idem := RestricIdem
-
-
 
 
 end Subestructuras
@@ -350,18 +339,14 @@ def BandHomtoOrdHom {α β :Type u} [RightNormalBand α][RightNormalBand β] (f 
 
 
 
-theorem BandIsoisOrdIso {α β : Type u} [RightNormalBand α][RightNormalBand β] {f : MulHom α β} {h : bijective f.toFun}: IsIso (BandHomtoOrdHom f) := by
-  constructor
-  apply h
-  intro x y fxy
-  have g : (f.toFun (x * y)) = f.toFun x := by
-    calc
-      (f.toFun (x * y)) = (f.toFun x) *(f.toFun y) := by apply f.map_mul'
-      _ = f.toFun x := by apply fxy
-  have g'' : x * y = x:= by
-    apply h.left
-    rw[g]
-  apply g''
+theorem BandIsoisOrdIso {α β : Type u} [RightNormalBand α][RightNormalBand β] {f : MulHom α β} {h : bijective f.toFun}: IsIso (BandHomtoOrdHom f) := by exact
+  { left := h,
+    right := fun x y fxy =>
+      let_fun g := Trans.trans (MulHom.map_mul' f x y) fxy;
+      let_fun g'' :=
+        And.left h (x * y) x
+          (Eq.mpr (id (g ▸ Eq.refl (MulHom.toFun f (x * y) = MulHom.toFun f x))) (Eq.refl (MulHom.toFun f x)));
+      g'' }
 end Homomorfismos
 section Congruencias
 
@@ -381,13 +366,8 @@ class Congruence (α : Type u) [RightNormalBand α] where
 
 def Cociente' {α : Type u} [RightNormalBand α] {h : Congruence α} : Setoid α where
   r := h.r
-  iseqv := by
-    constructor
-    apply h.refl
-    intro x y
-    apply h.symm
-    intro x y z
-    apply h.trans
+  iseqv := by exact
+    { refl := Congruence.refl, symm := fun {x y} => Congruence.symm, trans := fun {x y z} => Congruence.trans }
 
 def Cociente'' {α : Type u} [RightNormalBand α] {h : Congruence α} : HasEquiv α where
   Equiv := h.r
@@ -415,10 +395,7 @@ def ProjCann' {α : Type u} [RightNormalBand α] {h : Congruence α} : α → Qu
 
 theorem ProjCongr'' {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ x y z : α,  h.r y z → Quot.mk h.r (x * y) = Quot.mk h.r (x * z) := by
 intro x y z yrz
-have h' : h.r (x * y) (x *z) := by
-  apply h.cong
-  apply h.refl
-  apply yrz
+have h' : h.r (x * y) (x *z) := by exact Congruence.cong (Congruence.refl x) yrz
 exact Quot.sound h'
 
 theorem ProjCongr' {α : Type u} [RightNormalBand α] {h : Congruence α} : ∀ y z x : α,  h.r y z → Quot.mk h.r (y * x) = Quot.mk h.r (z * x) := by
@@ -516,7 +493,7 @@ theorem ProjectSymm [RightNormalBand α]  {a b: α} : Project a b → Project b 
   apply x.right
   apply x.left
 
-theorem ProjectTrans [RightNormalBand α] {a b c : α} : Project a b → Project b c → Project a c := by
+theorem ProjectTrans [RightNormalBand α] {a b c : α} : Project a b → Project b c → Project a c := by s
   intro x y
   constructor
   rw[← y.left]
