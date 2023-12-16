@@ -493,7 +493,7 @@ theorem ProjectSymm [RightNormalBand α]  {a b: α} : Project a b → Project b 
   apply x.right
   apply x.left
 
-theorem ProjectTrans [RightNormalBand α] {a b c : α} : Project a b → Project b c → Project a c := by s
+theorem ProjectTrans [RightNormalBand α] {a b c : α} : Project a b → Project b c → Project a c := by
   intro x y
   constructor
   rw[← y.left]
