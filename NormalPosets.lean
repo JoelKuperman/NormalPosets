@@ -885,7 +885,6 @@ theorem IsoComp' {α β γ: Type u} [PartialOrder α][PartialOrder β] [PartialO
     exact rfl
   have k'  :(InitialRestriction (OrderHom.comp f g) a) x = InitialRestriction f (g a) ⟨g x, k₁⟩ := by
     exact rfl
-
   have r : MapTo (g x) (g a) ≤ MapTo (g y) (g a) := by
     apply j.right
     calc
@@ -893,7 +892,6 @@ theorem IsoComp' {α β γ: Type u} [PartialOrder α][PartialOrder β] [PartialO
       _ = (InitialRestriction (OrderHom.comp f g) a) x  := by apply k'
       _ ≤  (InitialRestriction (OrderHom.comp f g) a) y := by apply xley
       _ = InitialRestriction f (g a) ⟨g y, k₂⟩ := by apply k
-
   have r' : g x ≤ g y := by exact r
   apply h'.right
   apply r'
@@ -937,9 +935,6 @@ lemma IsoisIso {α : Type u} [P : PartialOrder α] [PartialOrder β] {f : α ≃
 def SubProducto {α β : Type u} [PartialOrder α] [SemilatticeInf β] (f : α →o β )  : Set (β × α) :=
   {x | x.1 ≤ f x.2}
 
--- @[default_instance 1000]
--- instance OrderSL {β : Type u} [SemilatticeInf β] : PartialOrder β :=
---   RightNormalBand.orden_parcial
 
 
 --Producto de un semirretículo por una anticadena
@@ -947,11 +942,6 @@ def SubProducto {α β : Type u} [PartialOrder α] [SemilatticeInf β] (f : α �
 instance ProductoNormal {α β : Type u} [PartialOrder α] [S : SemilatticeInf β]  : RightNormalBand (β × α) :=
   BandProduct (A := SemilatticeNormal (S := S)) (B := AntichainNormal (α := α))
 
---attribute [-instance] AntichainNormal
--- El subconjunto anterior es cerrado
-
---set_option trace.Meta.synthInstance true
-#check ProductoNormal
 lemma ClosedSubProducto {α β : Type u} [P : PartialOrder α] [S : SemilatticeInf β] {f : α →o β}  : Closed (SubProducto f):= by
   intro x y _ yis
   have h : (x * y).1 ≤ f (x * y).2 := by
@@ -1146,24 +1136,10 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
 --Defino una banda sobre el cociente por el kernel
 instance NormalQuot {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : Congruence (SubProducto f) where
   r := KerProy
-  refl := by
-    intro x
-    apply KerProyRefl
-  symm := by
-    intro x y kxy
-    apply KerProySymm
-    apply kxy
-  trans := by
-    intro x y z kxy kyz
-    apply KerProyTrans
-    apply kxy
-    apply kyz
-  cong := by show_term
-    intro x y z w kxy kzw
-    apply KerProyCong
-    apply hf
-    apply kxy
-    apply kzw
+  refl := by exact fun x => KerProyRefl x
+  symm := by exact fun {x y} kxy => KerProySymm x y kxy
+  trans := by exact fun {x y z} kxy kyz => KerProyTrans x y z kxy kyz
+  cong := by exact fun {x y z w} kxy kzw => KerProyCong (hf :=hf) x y z w kxy kzw
 
 --Prueba de pertenencia a la subestructura que usare bastante
 lemma IsInSubProd {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : α, (f x, x) ∈ (SubProducto f) := by
