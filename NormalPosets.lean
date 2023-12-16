@@ -475,11 +475,15 @@ def ProjCann {α : Type u} [RightNormalBand α] {h : Congruence α} : MulHom α 
       ProjCann' (x * y) = Quot.mk h.r (x * y) := by apply Eq.refl
       _ = (Quot.mk h.r x) * (Quot.mk h.r y) := by apply Eq.refl
 
-def OrderProj {α : Type u} [RightNormalBand α] {h : Congruence α} : α →o (Quot h.r) := --La proyección canónica como homomorfismo de orden
+
+--La proyección canónica como homomorfismo de orden
+def OrderProj {α : Type u} [RightNormalBand α] {h : Congruence α} : α →o (Quot h.r) :=
   BandHomtoOrdHom ProjCann
 
+--La relación de la congruencia de proyecciones
 def Project  [RightNormalBand α] (a b : α) := a * b = b ∧ b * a = a
 
+--La rel anterior es reflexiva
 theorem ProjectRefl [RightNormalBand α]  {a : α} : Project a a := by
   have h' : a * a = a := by apply RightNormalBand.mul_idem
   have h'' : a * a = a ∧ a * a = a := by
@@ -487,12 +491,14 @@ theorem ProjectRefl [RightNormalBand α]  {a : α} : Project a a := by
     simp_all only [and_self]
   apply h''
 
+--La rel anterior es simétrica
 theorem ProjectSymm [RightNormalBand α]  {a b: α} : Project a b → Project b a := by
   intro x
   constructor
   apply x.right
   apply x.left
 
+--La rel anterior es reflexiva
 theorem ProjectTrans [RightNormalBand α] {a b c : α} : Project a b → Project b c → Project a c := by
   intro x y
   constructor
@@ -531,18 +537,10 @@ theorem ProjectCongr [RightNormalBand α]  {a b c d : α} :  Project a b → Pro
 
 instance ProjectCong (A : RightNormalBand α) : Congruence α where
   r := Project
-  refl := by
-    intro x
-    apply ProjectRefl
-  symm := by
-    intro x y1
-    apply ProjectSymm
-  trans := by
-    intro x y z
-    apply ProjectTrans
-  cong := by
-    intro x y z w
-    apply ProjectCongr
+  refl := by exact fun x => ProjectRefl
+  symm := by exact fun {x y1} => ProjectSymm
+  trans := by exact fun {x y z} => ProjectTrans
+  cong := by exact fun {x y z w} => ProjectCongr
 
 
 theorem ProductProject [RightNormalBand α] : ∀ a b :α, Project (a * b) (b * a) := by
