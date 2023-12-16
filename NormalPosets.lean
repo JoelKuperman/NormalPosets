@@ -75,23 +75,23 @@ theorem RestIsMon  [PartialOrder α] [PartialOrder β] {f : OrderHom α β} {p :
   simp
   apply xley
 
-  def OrdHomRestrict [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) : p →o β := -- Da la restricción como homomorfismo de orden
+def OrdHomRestrict [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) : p →o β := -- Da la restricción como homomorfismo de orden
  {toFun := OrdHomRestrict' f p
   monotone' := by apply RestIsMon}
 
-  def OrdHomRange' [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) (q : Set β) (c : Ordrange (OrdHomRestrict f p) ⊆ q): p → q := --Restringe el dominio y el codominio de un homomorfismo de orden
-    have h' : range (OrdHomRestrict' f p) ⊆ q := by
-      intro x xir
-      rcases xir with ⟨a, ha⟩
-      apply c
-      constructor
-      have h'' : (OrdHomRestrict f p) a = x := by
-        calc
-          (OrdHomRestrict f p) a = (OrdHomRestrict' f p) a := by apply Eq.refl
-          _ = x := by rw[ha]
-      apply Eq.symm
-      apply h''
-    cod_res (OrdHomRestrict' f p) q h'
+def OrdHomRange' [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set α) (q : Set β) (c : Ordrange (OrdHomRestrict f p) ⊆ q): p → q := --Restringe el dominio y el codominio de un homomorfismo de orden
+  have h' : range (OrdHomRestrict' f p) ⊆ q := by
+    intro x xir
+    rcases xir with ⟨a, ha⟩
+    apply c
+    constructor
+    have h'' : (OrdHomRestrict f p) a = x := by
+      calc
+        (OrdHomRestrict f p) a = (OrdHomRestrict' f p) a := by apply Eq.refl
+        _ = x := by rw[ha]
+    apply Eq.symm
+    apply h''
+  cod_res (OrdHomRestrict' f p) q h'
 
   theorem RestrictionMonotone [PartialOrder α] [PartialOrder β] {f : OrderHom α β}{p : Set α} {q : Set β} {c : Ordrange (OrdHomRestrict f p) ⊆ q} : Monotone (OrdHomRange' f p q c) := by
     intro x y xley
@@ -107,12 +107,9 @@ def OrdHomRange [PartialOrder α] [PartialOrder β] (f : OrderHom α β)(p : Set
   monotone' := RestrictionMonotone
   }
 
-  structure OrderIsomorphism (α β : Type u) [PartialOrder α] [PartialOrder β] extends OrderHom α β where
-    bij := bijective toFun
-    iso := ∀ x y : α, toFun x ≤ toFun y  → x ≤ y
+def IsIso {α β : Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β) : Prop :=
+  bijective f ∧   ∀ x y : α, f x ≤ f y  → x ≤ y
 
-  def IsIso {α β : Type u} [PartialOrder α] [PartialOrder β] (f : OrderHom α β) : Prop :=
-    bijective f ∧   ∀ x y : α, f x ≤ f y  → x ≤ y
 end Coerciones
 
 section RightNormalBand
@@ -755,12 +752,11 @@ instance AntichainNormal {α : Type u} [PartialOrder α] : RightNormalBand α wh
 
 section Semilattices
 variable {α : Type u} [SemilatticeInf α]
- #check SemilatticeInf
+
 
 theorem SLNorm : ∀ a b c : α, a ⊓ b ⊓ c = b ⊓ a ⊓ c := by
   intro a b c
   simp [inf_comm]
-
 
 @[default_instance 2000]
 instance SemilatticeNormal [S: SemilatticeInf α] : RightNormalBand α where
@@ -973,32 +969,32 @@ lemma ClosedSubProducto {α β : Type u} [P : PartialOrder α] [S : SemilatticeI
 
 --Definicion de una banda sobre este subconjunto
 @[default_instance 200]
-instance SubProductoNormal {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } : RightNormalBand (SubProducto f) :=
+instance SubProductoNormal {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β } : RightNormalBand (SubProducto f) :=
   SubBanda (s:= SubProducto f) (h:= ClosedSubProducto)
 
 
 
 --Defino una función cuyo kernel resultará congruencia
-noncomputable def Proy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β } (x : SubProducto f) : α :=
+noncomputable def Proy {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β } (x : SubProducto f) : α :=
   (Function.invFun (InitialRestriction f x.1.2) ⟨x.1.1, x.2⟩).1
 
 --El kernel
-noncomputable def KerProy {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} (x y : SubProducto f) : Prop := Proy x = Proy y
+noncomputable def KerProy {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β} (x y : SubProducto f) : Prop := Proy x = Proy y
 
 --Reflexividad
-lemma KerProyRefl {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x : SubProducto f, KerProy x x := by
+lemma KerProyRefl {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β} : ∀ x : SubProducto f, KerProy x x := by
   intro x
   apply Eq.refl
 
 --Simetría
-lemma KerProySymm {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y: SubProducto f, KerProy x y → KerProy y x := by
+lemma KerProySymm {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β} : ∀ x y: SubProducto f, KerProy x y → KerProy y x := by
   intro x y kxy
   have k' : Proy y = Proy x := by
    rw[kxy]
   apply k'
 
 --Transitividad
-lemma KerProyTrans {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} : ∀ x y z: SubProducto f, KerProy x y → KerProy y z → KerProy x z := by
+lemma KerProyTrans {α β : Type u} [PartialOrder α] [SemilatticeInf β] {f : α →o β} : ∀ x y z: SubProducto f, KerProy x y → KerProy y z → KerProy x z := by
   intro x y z xry yrz
   have h' : Proy x = Proy z := by
     calc
@@ -1043,11 +1039,6 @@ lemma KerProyCong {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β}
     calc
      y.1.1 * w.1.1 ≤  w.1.1 := by apply RightNormalBand.por_is_leq
       _ ≤ f w.1.2 := by apply w.2
-  have k₃ : x.1.1 * z.1.1 ≤ f w.1.2 := by
-    calc
-      x.1.1 * z.1.1 = y.1.1 * w.1.1 := by
-        simp_all[h'',h''']
-      _ ≤ f w.1.2 := by apply k₂
 
   have k₄ : x.1.1 * z.1.1 = (x * z).1.1 := by
     calc
@@ -1376,12 +1367,12 @@ def IsNormal' {α : Type u} (_ : PartialOrder α) : Prop := --Caracterización o
 ∃ (α' : Type u), ∃(_ : SemilatticeInf α'), ∃(f : OrderHom α α'), ∀(a : α), IsIso (InitialRestriction f a)
 
 
-theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α][Nonempty α] : IsNormal P ↔ IsNormal' P := by
+theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] [Nonempty α] : IsNormal P ↔ IsNormal' P := by
   constructor
   intro x
   rcases x with ⟨U,hu⟩
   rcases hu with ⟨A,HA⟩
-  rcases HA with ⟨g,hg⟩
+  rcases HA with ⟨g,_⟩
   have g' : IsIso (IsotoOrderHom g) := by
     apply IsoisIso
   have w : ∀ a : α, IsIso (InitialRestriction (OrderHom.comp (OrderProj (α:= U) (h := ProjectCong A)) g) a) := by
@@ -1390,7 +1381,7 @@ theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α][Nonempt
     apply g'
   have hf : ∃ f : OrderHom α (Quot (ProjectCong A).r), ∀(a : α), IsIso (InitialRestriction f a) := by
     exact Exists.intro (OrderHom.comp OrderProj ↑g) w
-  have hf' : ∃ x : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by
+  have hf' : ∃ _ : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by
     refine Exists.intro (QuotSemilattice A) hf
   simp_all
   apply Exists.intro (Quot (ProjectCong A).r)
