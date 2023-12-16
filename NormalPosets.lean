@@ -1246,27 +1246,10 @@ lemma IsEqual  {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f
           rw[h''']
 
 --Lo defino como iso, falta ver que la inversa preserva orden
-lemma NormalHomIsIso {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : IsIso (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) ):= by
-  have k : ∀ w, w = (Function.invFun (InitialRestriction f w) ⟨f w, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  w⟩).1 := by
-    intro x
-    have h' : ((InitialRestriction f x) ⟨x, le_refl x⟩).1 = ((InitialRestriction f x) (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩)).1 := by
-      calc
-          ((InitialRestriction f x) ⟨x, le_refl x⟩).1 = f x := by rfl
-          _ = ((InitialRestriction f x) (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩)).1 := by rw[(IsInverse (f:= InitialRestriction f x) (h:= (hf x).1)).right]
-    have h'' : ((InitialRestriction f x) ⟨x, le_refl x⟩) = ((InitialRestriction f x) (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩)) := by
-        exact SetCoe.ext h'
-    have h''' : MapTo x x = (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩) := by
-      apply (hf x).1.1
-      calc
-          (InitialRestriction f x) (MapTo x x) = (InitialRestriction f x) ⟨x, le_refl x⟩ := by rfl
-          _ = (InitialRestriction f x) (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩) := by apply h''
-    calc
-        x = (MapTo x x).1 := by rfl
-        _ = (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩).1 := by
-          rw[h''']
+lemma NormalHomIsBij {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : bijective (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) ):= by
 
   constructor
-  constructor
+
   -------------------------------------------Inyectividad--------------------------------------------------
   intro x y fxy
   have h' : (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f) x⟩).1 = (Function.invFun (InitialRestriction f y) ⟨f y, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f) y⟩).1 := by
@@ -1281,9 +1264,9 @@ lemma NormalHomIsIso {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf 
 
   calc
     x = (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩).1 := by
-     apply k x
+     apply IsEqual (α := α) (β := β) (P := P) (S := S) (f := f) (hf := hf) x
     _ = (Function.invFun (InitialRestriction f y) ⟨f y, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  y⟩).1 := by apply h'
-    _ = y := by rw[←(k y)]
+    _ = y := by rw[← (IsEqual (α := α) (β := β) (P := P) (S := S) (f := f) (hf := hf) y)]
 
   ---------------------------------------------- Suryectividad --------------------------------------------------------
   intro x
@@ -1299,41 +1282,26 @@ lemma NormalHomIsIso {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf 
             Proy ⟨(f x'' ,x''), IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f) x''⟩ = (Function.invFun (InitialRestriction f x'') ⟨f x'' ,IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f) (x'')⟩).1 := by rfl
             _ = x'' := by
               apply Eq.symm
-              apply k
+              apply IsEqual (α := α) (β := β) (P := P) (S := S) (f := f) (hf := hf) x''
             _ = ((Function.invFun) (InitialRestriction f x'.1.2) ⟨x'.1.1, x'.2⟩).1 := by
               rfl
         exact Quot.sound k
       _ = x := by simp_all[hx]
   exact Exists.intro x'' h''
 
-  ------------------------------------------ Inversa preserva orden ----------------------------------------------------------
-  intro x y xley
-  have k : Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f x, x), by apply IsInSubProd x⟩ = Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨((f x ⊓ f y), y), _⟩ := by
-    calc
-      Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f x, x), by apply IsInSubProd x⟩ = IsNormalHom' x := by apply Eq.refl
-      _ = (IsNormalHom' x) * (IsNormalHom' y) := by
-        have h' : RightNormalBand.leq (IsNormalHom' x) (IsNormalHom' y) := by apply xley
-        rw[h']
-      _ = Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f x, x), by apply IsInSubProd x⟩ * Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f y, y), by apply IsInSubProd y⟩ := by apply Eq.refl
-      _ = Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨(f x, x) * (f y, y), _⟩ := by apply Eq.refl
-      _ = Quot.mk (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r ⟨((f x ⊓ f y), y), _⟩ := by apply Eq.refl
-  have h' : Proy ⟨(f x, x), by apply IsInSubProd x⟩ = Proy ⟨((f x ⊓ f y), y), _⟩ := by
-    have h'' : KerProy ⟨(f x, x), by apply IsInSubProd x⟩ ⟨((f x ⊓ f y), y), _⟩ := by
-      apply CongSound (h := NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf))
-      apply k
-    exact h''
-  calc
-    x = (Function.invFun (InitialRestriction f x) ⟨f x, by apply IsInSubProd x⟩).1 := by
-        exact IsEqual (α := α) (β := β) (P := P) (S := S) (f := f) (hf := hf) x
-    _ = Proy ⟨(f x, x), by apply IsInSubProd x⟩ := by apply Eq.refl
-    _ = Proy ⟨((f x ⊓ f y), y), _⟩ := by apply h'
-    _ = Function.invFun (InitialRestriction f y) ⟨f x ⊓ f y, _⟩ := by apply Eq.refl
-    _ ≤ y := by apply (Function.invFun (InitialRestriction f y) ⟨f x ⊓ f y, _⟩).2
+
+
 noncomputable def NormalIso {α β : Type u} [Nonempty α] {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : α ≃o Quot (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r where
   toFun := (IsNormalHom' (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )
   invFun := Function.invFun (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )
-  left_inv := by apply (IsInverse (f:= (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )) (h:= NormalHomIsIso.1 )).left
-  right_inv := by apply (IsInverse (f:= (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )) (h:= NormalHomIsIso.1 )).right
+  left_inv := by
+    apply Function.leftInverse_invFun
+    intro x y
+    apply NormalHomIsBij.1
+  right_inv := by
+    apply Function.rightInverse_invFun
+    intro x
+    apply NormalHomIsBij.2
   map_rel_iff' := by
     intro x y
     constructor
