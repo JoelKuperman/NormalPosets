@@ -1193,8 +1193,8 @@ lemma IsEqual  {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f
         _ = (Function.invFun (InitialRestriction f x) ⟨f x, IsInSubProd (α := α) (β:= β) (P:= P) (S := S) (f:= f)  x⟩).1 := by
           rw[h''']
 
---Lo defino como iso, falta ver que la inversa preserva orden
-lemma NormalHomIsBij {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : bijective (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) ):= by
+--Muestro que el homomorfismo anterior es biyectivo
+lemma NormalHomIsBij {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : bijective (IsNormalHom' (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) ):= by
 
   constructor
 
@@ -1242,14 +1242,8 @@ lemma NormalHomIsBij {α β : Type u} {P : PartialOrder α} {S : SemilatticeInf 
 noncomputable def NormalIso {α β : Type u} [Nonempty α] {P : PartialOrder α} {S : SemilatticeInf β} {f : α →o β} {hf : ∀ a : α, IsIso (InitialRestriction f a)} : α ≃o Quot (NormalQuot (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf)).r where
   toFun := (IsNormalHom' (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )
   invFun := Function.invFun (IsNormalHom (α := α) (β:= β) (P:= P) (S := S) (f:= f) (hf := hf) )
-  left_inv := by
-    apply Function.leftInverse_invFun
-    intro x y
-    apply NormalHomIsBij.1
-  right_inv := by
-    apply Function.rightInverse_invFun
-    intro x
-    apply NormalHomIsBij.2
+  left_inv := by exact Function.leftInverse_invFun fun ⦃x y⦄ => And.left NormalHomIsBij x y
+  right_inv := by exact Function.rightInverse_invFun fun ⦃x⦄ => And.right NormalHomIsBij x
   map_rel_iff' := by
     intro x y
     constructor
@@ -1289,16 +1283,13 @@ theorem NormalPosetsCharacterization {α : Type u} [P : PartialOrder α] [Nonemp
   rcases x with ⟨U,hu⟩
   rcases hu with ⟨A,HA⟩
   rcases HA with ⟨g,_⟩
-  have g' : IsIso (IsotoOrderHom g) := by
-    apply IsoisIso
+  have g' : IsIso (IsotoOrderHom g) := by apply IsoisIso
   have w : ∀ a : α, IsIso (InitialRestriction (OrderHom.comp (OrderProj (α:= U) (h := ProjectCong A)) g) a) := by
     apply IsoComp'
     apply RestrictProjectIsIso
     apply g'
-  have hf : ∃ f : OrderHom α (Quot (ProjectCong A).r), ∀(a : α), IsIso (InitialRestriction f a) := by
-    exact Exists.intro (OrderHom.comp OrderProj ↑g) w
-  have hf' : ∃ _ : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by
-    refine Exists.intro (QuotSemilattice A) hf
+  have hf : ∃ f : OrderHom α (Quot (ProjectCong A).r), ∀(a : α), IsIso (InitialRestriction f a) := by exact Exists.intro (OrderHom.comp OrderProj ↑g) w
+  have hf' : ∃ _ : SemilatticeInf (Quot (ProjectCong A).r),∃ f : OrderHom α (Quot (ProjectCong A).r),  ∀(a : α), IsIso (InitialRestriction f a) := by refine Exists.intro (QuotSemilattice A) hf
   simp_all
   apply Exists.intro (Quot (ProjectCong A).r)
   use (QuotSemilattice A)
